@@ -61,6 +61,16 @@ class Bot:
         response.append(self.moveForward(abs(self.getAttr('Y')-targetY)+1))
         return response
 
+    def switchGoals:
+        response = self.violence()
+
+        #get to goal
+        targetY = 103 if self.getAttr('Y') < 0 else -103
+        targetX = 12 - 8*self.number
+        response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), targetX, targetY ) )
+        response.append(self.moveForward(dist(self.getAttr('X'), self.getAttr('Y'), targetX, targetY)))
+        return response
+
     def getAmmo(self):
 
         response = self.violence()
