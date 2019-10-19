@@ -11,7 +11,7 @@ GOAL = 3
 class Bot:
 
     def __init__(self,i,name,server,port,state):
-        self.i = 0
+        self.i = i
         self.teamname = name.split(':')[0]
         self.fullname = name
         self.number = int(name.split(':')[1])
@@ -39,12 +39,12 @@ class Bot:
 
     def move(self):
         gx, gy = 0, 0
-        if self.state.kills[self.id] != 0:
+        if self.state.kills[self.id] != 0 or self.state.snitch_id == self.id:
             gx = 0
-            gy = -105 if self.getAttr('X') < 0 else 105
+            gy = -105 if self.getAttr('Y') < 0 else 105
         elif self.getAttr('Health') <= 2:
             for _, obj in self.state.objects.items():
-                if obj['Type'] == 'HealthPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id):
+                if obj['Type'] == 'HealthPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id or self.state.objects[self.state.pickups[obj['Id']]]['Health'] <= 0):
                     self.state.pickups[obj['Id']] = self.id
                     gx = obj['X']
                     gy = obj['Y']
@@ -110,6 +110,8 @@ class Bot:
             self.state.kills[self.id] += 1
         if messageType == ServerMessageTypes.ENTEREDGOAL:
             self.state.kills[self.id] = 0
+        if messageType == ServerMessageTypes.SNITCHPICKUP:
+            self.state.snitch_id = message['Id']
         return self.move() + self.shoot()
 
     def activate(self):
