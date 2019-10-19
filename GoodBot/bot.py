@@ -39,43 +39,66 @@ class Bot:
 
     def move(self):
         gx, gy = 0, 0
+        flag = False
         if self.state.kills[self.id] != 0 or self.state.snitch_id == self.id:
+            neg, pos = 0, 0
+            enemies = self.state.enemies(self.teamname)
+            for id, enemy in enemies.items():
+                if dist(enemy['X'], enemy['Y'], 0, -100) < 30:
+                    neg += 1
+                if dist(enemy['X'], enemy['Y'], 0, 100) < 30:
+                    pos += 1
             gx = 0
-            gy = -105 if self.getAttr('Y') < 0 else 105
-        elif self.getAttr('Health') <= 2:
+            if neg < pos:
+                gy = -105
+            elif neg > pos:
+                gy = 105
+            else:
+                gy = -105 if self.getAttr('Y') < 0 else 105
+        elif self.getAttr('Health') <= 1 or (self.getAttr('Health') <= 2 and not self.state.snitch):
+            chosen = None
             for _, obj in self.state.objects.items():
-                if obj['Type'] == 'HealthPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id or self.state.objects[self.state.pickups[obj['Id']]]['Health'] <= 0):
-                    self.state.pickups[obj['Id']] = self.id
-                    gx = obj['X']
-                    gy = obj['Y']
-                    break
-        elif self.getAttr('Ammo') <= 4:
+                if obj['Type'] == 'HealthPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id or self.state.objects[self.state.pickups[obj['Id']]]['Health'] <= 0) and (chosen is None or dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), chosen['X'], chosen['Y'])):
+                    chosen = obj
+            if chosen is not None:
+                self.state.pickups[chosen['Id']] = self.id
+                gx = chosen['X']
+                gy = chosen['Y']
+        elif self.getAttr('Ammo') <= 0 or (self.getAttr('Ammo') <= 5 and not self.state.snitch):
+            chosen = None
             for _, obj in self.state.objects.items():
-                if obj['Type'] == 'AmmoPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id):
-                    self.state.pickups[obj['Id']] = self.id
-                    gx = obj['X']
-                    gy = obj['Y']
-                    break
+                if obj['Type'] == 'AmmoPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id or self.state.objects[self.state.pickups[obj['Id']]]['Health'] <= 0) and (chosen is None or dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), chosen['X'], chosen['Y'])):
+                    chosen = obj
+            if chosen is not None:    
+                self.state.pickups[chosen['Id']] = self.id
+                gx = chosen['X']
+                gy = chosen['Y']
         else:
             gx = 15 if self.i < 2 else -15
             gy = 85 if self.i % 2 == 0 else -85
             for id, obj in self.state.objects.items():
                 if obj['Type'] == 'Snitch':
+                    print("Going after the snitch")
                     gx = obj['X']
                     gy = obj['Y']
+                    flag = True
 
         if abs(getHeading(self.getAttr('X'), self.getAttr('Y'), gx, gy) - self.getAttr('Heading')) < self.minTurn:
             MoveForwardMsg = self.moveForward(10)
             return [ MoveForwardMsg ]
         else:
             HeadingMsg = self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), gx, gy)
-            return [ HeadingMsg ]
+            if flag:
+                MoveForwardMsg = self.moveForward(10)
+                return [ HeadingMsg, MoveForwardMsg ]
+            else:
+                return [ HeadingMsg ]
 
     def shoot(self):
         target = -1
         allies = self.state.allies(self.teamname)
         for id, ally in allies.items():
-            if ally['Health'] == 1 and self.state.kills[id] == 0:
+            if id != self.id and ally['Health'] == 1 and self.state.kills[id] == 0:
                 target = ally
                 break
         if target == -1:
@@ -111,7 +134,10 @@ class Bot:
         if messageType == ServerMessageTypes.ENTEREDGOAL:
             self.state.kills[self.id] = 0
         if messageType == ServerMessageTypes.SNITCHPICKUP:
+            self.state.snitch = False
             self.state.snitch_id = message['Id']
+        if messageType == ServerMessageTypes.SNITCHAPPEARED:
+            self.state.snitch = True
         return self.move() + self.shoot()
 
     def activate(self):
