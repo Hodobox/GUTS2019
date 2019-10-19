@@ -30,12 +30,11 @@ class Bot:
     def moveForward(self, dist):
         return [ServerMessageTypes.MOVEFORWARDDISTANCE,{'Amount' : dist}]
 
-    def getToGoal(self):
+    def violence(self):
+         
         response = []
-
-        # fire while getting to goal
         enemies = self.state.enemies(self.teamname)
-        # find closest enemy
+        
         bestDist = 1000000
         target = None
         for enemy in enemies.items():
@@ -50,6 +49,10 @@ class Bot:
             TurretHeadingMsg = self.turnTurretToHeading(prex, prey)
             TurretHeadingAmount = TurretHeadingMsg[1]['Amount']
             response += [TurretHeadingMsg, self.fire()]
+        return response
+
+    def getToGoal(self):
+        response = self.violence()
 
         #get to goal
         targetY = -103 if self.getAttr('Y') < 0 else 103
@@ -60,24 +63,7 @@ class Bot:
 
     def getAmmo(self):
 
-        response = []
-        # fire while looking for ammo
-        enemies = self.state.enemies(self.teamname)
-        # find closest enemy
-        bestDist = 1000000
-        target = None
-        for enemy in enemies.items():
-            D = dist(self.getAttr('X'),self.getAttr('Y'), enemy[1]['X'],enemy[1]['Y'])
-            if D < bestDist:
-                bestDist = D
-                target = enemy[1]
-
-        if bestDist < 100:
-            #preaim enemy
-            prex, prey = preaim(self.getAttr('X'), self.getAttr('Y'), target)
-            TurretHeadingMsg = self.turnTurretToHeading(prex, prey)
-            TurretHeadingAmount = TurretHeadingMsg[1]['Amount']
-            response += [TurretHeadingMsg, self.fire()]
+        response = self.violence()
 
         #find ammo pickup
         ammo = self.state.ammo()
@@ -109,22 +95,8 @@ class Bot:
                 return [ self.turnTurretToHeading(0,0) ]
             else:
                 return [ self.turnTurretToHeading(100,100) ]
-        # find closest enemy
-        bestDist = 1000000
-        target = None
-        for enemy in enemies.items():
-            D = dist(self.getAttr('X'),self.getAttr('Y'), enemy[1]['X'],enemy[1]['Y'])
-            if D < bestDist:
-                bestDist = D
-                target = enemy[1]
-
-        if bestDist > 100:
-            return []
-        #preaim enemy
-        prex, prey = preaim(self.getAttr('X'), self.getAttr('Y'), target)
-        TurretHeadingMsg = self.turnTurretToHeading(prex, prey)
-        TurretHeadingAmount = TurretHeadingMsg[1]['Amount']
-        return [ TurretHeadingMsg, self.fire() ]
+        
+        return self.violence()
 
     def receiveMessage(self, message):
         messageType = message['messageType']
@@ -139,7 +111,7 @@ class Bot:
 
         if self.id is None:
             return []
-        if messageType == ServerMessageTypes.KILL:
+        if messageType == ServerMessageTypes.KILL and abs(self.getAttr('Y')) > 100:
             response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),0,0))
             response.append(self.moveForward(25))
             return response

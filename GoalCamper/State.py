@@ -9,7 +9,16 @@ class State:
         self.last_clear = time.time()
 
     def update(self, obj):
+        
+        if obj['Id'] in self.objects and obj['Type'] == 'Tank':
+            timediff = time.time() - self.objects[obj['Id']]['time']
+            dx = obj['X'] - self.objects[ obj['Id'] ]['X']
+            dy = obj['Y'] - self.objects[ obj['Id'] ]['Y']
+            velocity = sqrt(dx**2 + dy**2)
+            obj['velocity'] = velocity
+
         obj['time'] = time.time()
+
         self.objects[ obj['Id'] ] = obj
 
         if time.time() - self.last_clear > 4:
