@@ -20,7 +20,7 @@ class Bot:
         self.state = state
         self.id = None
         self.minDist = 5
-        self.minTurn = 5
+        self.minTurn = 2
 
     def getAttr(self,Attr):
         return self.state.getAttr(self.id,Attr)
