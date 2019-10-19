@@ -38,14 +38,15 @@ class Bot:
         return response
 
     def getAmmo(self):
+        response = []
         ammo = self.state.ammo()
         closest = None
-        mindist = None
+        mindist = 1000000
         for pickup in ammo.items():
-            dist = dist(self.getAttr('X'), self.getAttr('Y'),pickup[1]['X'], pickup[1]['Y'])
-            if dist < mindist:
+            distance = dist(self.getAttr('X'), self.getAttr('Y'),pickup[1]['X'], pickup[1]['Y'])
+            if distance < mindist:
                 closest = pickup[1]
-                mindist = dist
+                mindist = distance
         if closest == None:
             return []
 
