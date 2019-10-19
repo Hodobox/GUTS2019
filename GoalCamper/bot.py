@@ -61,8 +61,8 @@ class Bot:
         if len(enemies) == 0:
             if random.choice([False,True]):
                 return [ self.turnTurretToHeading(0,0) ]
-            # else:
-            #     return [ self.turnTurretToHeading(100,100) ]
+            else:
+                return [ self.turnTurretToHeading(100,100) ]
         # find closest enemy
         bestDist = 1000000
         target = None
@@ -72,12 +72,11 @@ class Bot:
                 bestDist = D
                 target = enemy[1]
 
-        print('camping target dist',bestDist)
-
         if bestDist > 100:
             return []
-
-        TurretHeadingMsg = self.turnTurretToHeading(target['X'],target['Y'])
+        #preaim enemy
+        prex, prey = preaim(self.getAttr('X'), self.getAttr('Y'), target)
+        TurretHeadingMsg = self.turnTurretToHeading(prex, prey)
         TurretHeadingAmount = TurretHeadingMsg[1]['Amount']
         return [ TurretHeadingMsg, self.fire() ]
 
