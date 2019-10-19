@@ -43,12 +43,31 @@ class Bot:
                 bestDist = D
                 target = enemy[1]
 
-        if bestDist < 100:
+        if (bestDist < 80) or (bestDist < 100 and len(self.state.suicides) > 1 + (1 if self.id in self.state.suicides else 0) ):
             #preaim enemy
+            #print('I hunt')
             prex, prey = preaim(self.getAttr('X'), self.getAttr('Y'), target)
             TurretHeadingMsg = self.turnTurretToHeading(prex, prey)
             TurretHeadingAmount = TurretHeadingMsg[1]['Amount']
             response += [TurretHeadingMsg, self.fire()]
+        else: # try assisted suicide
+            bestDist = 1000000
+            target = None
+            for suicidal in self.state.suicides:
+                if suicidal == self.id:
+                    continue
+                X,Y = self.state.getAttr(suicidal,'X'),self.state.getAttr(suicidal,'Y')
+                D = dist(self.getAttr('X'),self.getAttr('Y'),X,Y)
+                if D < bestDist:
+                    target = suicidal
+                    bestDist = D
+
+            if bestDist < 30:
+                print('Suicide hotline is here')
+                prex, prey = preaim(self.getAttr('X'), self.getAttr('Y'), self.state.objects[target])
+                TurretHeadingMsg = self.turnTurretToHeading(prex, prey)
+                response += [ TurretHeadingMsg, self.fire() ]
+
         return response
 
     def getToGoal(self):
@@ -118,6 +137,17 @@ class Bot:
             #logging.info(message)
             if self.id is None and message['Name'] == self.fullname:
                 self.id = message['Id']
+
+        if messageType == ServerMessageTypes.HITDETECTED:
+            print(self.id,'has been hit. Health:',self.getAttr('Health'))
+            if self.getAttr('Health') == 2:
+                print(self.id,': I am suiciding')
+                self.state.suicides.add(self.id)
+
+        if messageType == ServerMessageTypes.DESTROYED:
+            if self.id in self.state.suicides:
+                print(self.id,': I want to live')
+                self.state.suicides.remove(self.id)
 
         if self.id is None:
             return []
