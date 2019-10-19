@@ -1,0 +1,5 @@
+goto obj of type
+a * dist(obj) + b * health + c * ammo + d * kills + e
+
+shoot at obj
+a * dist(obj) + b * health + c * ammo

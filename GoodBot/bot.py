@@ -10,7 +10,7 @@ GOAL = 3
 
 class Bot:
 
-    def __init__(self,name,server,port,state,w,ws):
+    def __init__(self,i,name,server,port,state):
         self.i = 0
         self.teamname = name.split(':')[0]
         self.fullname = name
@@ -19,9 +19,6 @@ class Bot:
         self.port = port
         self.state = state
         self.id = None
-        self.kills = 0
-        self.w = w
-        self.ws = ws
         self.minDist = 5
         self.minTurn = 5
 
@@ -40,118 +37,59 @@ class Bot:
     def moveForward(self, dist):
         return [ServerMessageTypes.MOVEFORWARDDISTANCE,{'Amount' : dist}]
 
-    def getToGoal(self):
-        response = []
-        targetY = -103 if self.getAttr('Y') < 0 else 103
-        targetX = 12 - 8*self.number
-        response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), targetX, targetY ) )
-        response.append(self.moveForward(abs(self.getAttr('Y')-targetY)+1))
-        return response
-
-    def getAmmo(self):
-        response = []
-        ammo = self.state.ammo()
-        closest = None
-        mindist = 1000000
-        for pickup in ammo.items():
-            distance = dist(self.getAttr('X'), self.getAttr('Y'),pickup[1]['X'], pickup[1]['Y'])
-            if distance < mindist:
-                closest = pickup[1]
-                mindist = distance
-        if closest == None:
-            return []
-
-        response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), closest['X'], closest['Y']) )
-        response.append(self.moveForward(mindist))
-        return response
-
-
-    def camp(self):
-        enemies = self.state.enemies(self.teamname)
-        if len(enemies) == 0:
-            if random.choice([False,True]):
-                return [ self.turnTurretToHeading(0,0) ]
-            # else:
-            #     return [ self.turnTurretToHeading(100,100) ]
-        # find closest enemy
-        bestDist = 1000000
-        target = None
-        for enemy in enemies.items():
-            D = dist(self.getAttr('X'),self.getAttr('Y'), enemy[1]['X'],enemy[1]['Y'])
-            if D < bestDist:
-                bestDist = D
-                target = enemy[1]
-
-        print('camping target dist',bestDist)
-
-        if bestDist > 100:
-            return []
-
-        TurretHeadingMsg = self.turnTurretToHeading(target['X'],target['Y'])
-        TurretHeadingAmount = TurretHeadingMsg[1]['Amount']
-        return [ TurretHeadingMsg, self.fire() ]
-    
-    def calcScore(self, typ, x, y):
-        D = dist(self.getAttr('X'), self.getAttr('Y'), x, y)
-        score = self.w[typ][0] * D/245 + self.w[typ][1] * self.getAttr('Health')/3 + self.w[typ][2] * self.getAttr('Ammo')/10 + self.w[typ][3] * self.kills + self.w[typ][4]
-        return score
-    
-    def calcShootScore(self, enemy):
-        D = dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y'])
-        score = self.ws[0] * D/245 + self.ws[1] * enemy['Health']/3 + self.ws[2] * enemy['Ammo']/10
-        return score
-
     def move(self):
-        enemies = self.state.enemies(self.teamname)
-        bestPos, bestScore = ( -1 ), 0
-        for _, enemy in enemies.items():
-            score = self.calcScore(ENEMY, enemy['X'], enemy['Y'])
-            if bestPos == ( -1 ) or bestScore < score:
-                bestScore = score
-                bestPos = ( enemy['X'], enemy['Y'] )
-        for _, obj in self.state.objects.items():
-            if obj['Type'] == 'HealthPickup':
-                score = self.calcScore(HEALTH, obj['X'], obj['Y'])
-                if bestPos == ( -1 ) or bestScore < score:
-                    bestScore = score
-                    bestPos = ( obj['X'], obj['Y'] )
-            if obj['Type'] == 'AmmoPickup':
-                score = self.calcScore(AMMO, obj['X'], obj['Y'])
-                if bestPos == ( -1 ) or bestScore < score:
-                    bestScore = score
-                    bestPos = ( obj['X'], obj['Y'] )
-        score = self.calcScore(GOAL, 0, 100)
-        if bestPos == ( -1 ) or bestScore < score:
-            bestScore = score
-            bestPos = ( 0, 100 )
-        score = self.calcScore(GOAL, 0, -100)
-        if bestPos == ( -1 ) or bestScore < score:
-            bestScore = score
-            bestPos = ( 0, -100 )
-        if dist(self.getAttr('X'), self.getAttr('Y'), bestPos[0], bestPos[1]) < self.minDist:
-            return []
-        if abs(getHeading(self.getAttr('X'), self.getAttr('Y'), bestPos[0], bestPos[1]) - self.getAttr('Heading')) < self.minTurn:
+        gx, gy = 0, 0
+        if self.state.kills[self.id] != 0:
+            gx = 0
+            gy = -105 if self.getAttr('X') < 0 else 105
+        elif self.getAttr('Health') <= 2:
+            for _, obj in self.state.objects.items():
+                if obj['Type'] == 'HealthPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id):
+                    self.state.pickups[obj['Id']] = self.id
+                    gx = obj['X']
+                    gy = obj['Y']
+                    break
+        elif self.getAttr('Ammo') <= 4:
+            for _, obj in self.state.objects.items():
+                if obj['Type'] == 'AmmoPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id):
+                    self.state.pickups[obj['Id']] = self.id
+                    gx = obj['X']
+                    gy = obj['Y']
+                    break
+        else:
+            gx = 15 if self.i < 2 else -15
+            gy = 85 if self.i % 2 == 0 else -85
+            for id, obj in self.state.objects.items():
+                if obj['Type'] == 'Snitch':
+                    gx = obj['X']
+                    gy = obj['Y']
+
+        if abs(getHeading(self.getAttr('X'), self.getAttr('Y'), gx, gy) - self.getAttr('Heading')) < self.minTurn:
             MoveForwardMsg = self.moveForward(10)
             return [ MoveForwardMsg ]
         else:
-            HeadingMsg = self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), bestPos[0], bestPos[1])
+            HeadingMsg = self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), gx, gy)
             return [ HeadingMsg ]
 
     def shoot(self):
-        enemies = self.state.enemies(self.teamname)
-        bestName, bestScore = '', 0
-        for name, enemy in enemies.items():
-            score = self.calcShootScore(enemy)
-            if bestName == '' or bestScore < score:
-                bestScore = score
-                bestName = name
-        if bestName == '':
+        target = -1
+        allies = self.state.allies(self.teamname)
+        for id, ally in allies.items():
+            if ally['Health'] == 1 and self.state.kills[id] == 0:
+                target = ally
+                break
+        if target == -1:
+            enemies = self.state.enemies(self.teamname)
+            for id, enemy in enemies.items():
+                if dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < 100 and (target == -1 or enemy['Health'] < target['Health'] or (enemy['Health'] == target['Health'] and dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']))):
+                    target = enemy
+        if target == -1:
             return []
-        if abs(getHeading(self.getAttr('X'), self.getAttr('Y'), enemies[bestName]['X'], enemies[bestName]['Y']) - self.getAttr('TurretHeading')) < self.minTurn:
+        if abs(getHeading(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']) - self.getAttr('TurretHeading')) < self.minTurn:
             FireMsg = self.fire()
             return [ FireMsg ]
         else:
-            TurretHeadingMsg = self.turnTurretToHeading(enemies[bestName]['X'], enemies[bestName]['Y'])
+            TurretHeadingMsg = self.turnTurretToHeading(target['X'], target['Y'])
             return [ TurretHeadingMsg ]
 
     def receiveMessage(self, message):
@@ -164,24 +102,15 @@ class Bot:
             #logging.info(message)
             if self.id is None and message['Name'] == self.fullname:
                 self.id = message['Id']
+                self.state.kills[self.id] = 0
 
         if self.id is None:
             return []
         if messageType == ServerMessageTypes.KILL:
-            self.kills += 1
-            response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),0,0))
-            response.append(self.moveForward(25))
-            return response
+            self.state.kills[self.id] += 1
         if messageType == ServerMessageTypes.ENTEREDGOAL:
-            self.kills = 0
+            self.state.kills[self.id] = 0
         return self.move() + self.shoot()
-        '''Ypos = self.state.getAttr(self.id, 'Y')
-        if abs(Ypos) > 100 and self.state.getAttr(self.id, 'Ammo') > 0: # we are in goal with ammo, camp
-            return self.camp()
-        elif self.state.getAttr(self.id, 'Ammo') == 0:
-            return self.getAmmo()
-        else:
-            return self.getToGoal()'''
 
     def activate(self):
         self.server.sendMessage(ServerMessageTypes.CREATETANK, {'Name' : self.fullname})
