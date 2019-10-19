@@ -19,7 +19,6 @@ parser.add_argument('-d', '--debug', action='store_true', help='Enable debug out
 parser.add_argument('-H', '--hostname', default='127.0.0.1', help='Hostname to connect to')
 parser.add_argument('-p', '--port', default=8052, type=int, help='Port to connect to')
 parser.add_argument('-n', '--name', default='ifbot:', help='Name of bot')
-
 args = parser.parse_args()
 
 # Set up console logging

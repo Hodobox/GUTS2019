@@ -7,8 +7,6 @@ class State:
         # id : object_dict
         self.objects = {}
         self.last_clear = time.time()
-        self.kills = {}
-        self.pickups = {}
 
     def update(self, obj):
         obj['time'] = time.time()
@@ -32,13 +30,6 @@ class State:
         res = {}
         for Id in self.objects:
             if teamname not in self.objects[Id]['Name'] and self.objects[Id]['Type'] == 'Tank':
-                res[Id] = copy.deepcopy(self.objects[Id])
-        return res
-
-    def allies(self, teamname):
-        res = {}
-        for Id in self.objects:
-            if teamname in self.objects[Id]['Name'] and self.objects[Id]['Type'] == 'Tank':
                 res[Id] = copy.deepcopy(self.objects[Id])
         return res
 
