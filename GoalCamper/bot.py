@@ -31,7 +31,7 @@ class Bot:
 
     def getToGoal(self):
         response = []
-        targetY = -101 if self.getAttr('Y') < 0 else 101
+        targetY = -103 if self.getAttr('Y') < 0 else 103
         targetX = 12 - 8*self.number
         response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), targetX, targetY ) )
         response.append(self.moveForward(abs(self.getAttr('Y')-targetY)+1))
@@ -43,7 +43,7 @@ class Bot:
     def camp(self):
         enemies = self.state.enemies(self.teamname)
         if len(enemies) == 0:
-            return []
+            return [ self.turnTurretToHeading(0,0) ]
 
         # find closest enemy
         bestDist = 1000000
@@ -56,15 +56,7 @@ class Bot:
 
         TurretHeadingMsg = self.turnTurretToHeading(target['X'],target['Y'])
         TurretHeadingAmount = TurretHeadingMsg[1]['Amount']
-
-        print(self.fullname,'camping',target['X'],target['Y'],TurretHeadingAmount,'Im heading',self.getAttr('TurretHeading'))
-
-        # if we are already aiming at it, shoot
-        #if abs(TurretHeadingAmount - self.getAttr('TurretHeading')) < 1:
         return [ TurretHeadingMsg, self.fire() ]
-     #   else: #turn turret to the enemy
-      #      print('Turning to ',TurretHeadingMsg)
-       #     return [ TurretHeadingMsg ]
 
     def receiveMessage(self, message):
         messageType = message['messageType']
@@ -79,6 +71,12 @@ class Bot:
 
         if self.id is None:
             return []
+
+
+        if messageType == ServerMessageTypes.KILL:
+            response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),0,0))
+            response.append(self.moveForward(25))
+            return response
 
         Ypos = self.state.getAttr(self.id, 'Y')
         if abs(Ypos) > 100 and self.state.getAttr(self.id, 'Ammo') > 0: # we are in goal with ammo, camp
