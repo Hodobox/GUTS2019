@@ -8,6 +8,7 @@ class State:
         # id : object_dict
         self.objects = {}
         self.last_clear = time.time()
+        self.suicides = set()
 
     def update(self, obj):
         
