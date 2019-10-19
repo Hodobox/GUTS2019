@@ -11,6 +11,10 @@ class State:
         obj['time'] = time.time()
         self.objects[ obj['Id'] ] = obj
 
+    def getAttr(self, Id, Attr):
+        if Id not in self.objects:
+            return None
+        return self.objects[Id][Attr]
 
     def enemies(self, teamname):
         res = {}
