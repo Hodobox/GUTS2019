@@ -9,6 +9,7 @@ class State:
         self.last_clear = time.time()
         self.kills = {}
         self.pickups = {}
+        self.snitch_id = -1
 
     def update(self, obj):
         obj['time'] = time.time()
