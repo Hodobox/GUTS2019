@@ -26,7 +26,7 @@ if args.debug:
 else:
     logging.basicConfig(format='[%(asctime)s] %(message)s', level=logging.INFO)
 
-NUMBOTS = 4
+NUMBOTS = 1
 
 # Connect to game server
 state = State()

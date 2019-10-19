@@ -19,6 +19,9 @@ class Bot:
 
     def turnToHeading(self,x,y,X,Y):
         return [ServerMessageTypes.TURNTOHEADING, {'Amount' : getHeading(x,y,X,Y)}]
+
+    def turnTurretToHeading(self,X,Y):
+        return [ServerMessageTypes.TURNTURRETTOHEADING, {'Amount' : getHeading(self.getAttr('X'), self.getAttr('Y'), X, Y) }]
          
     def fire(self):
         return [ServerMessageTypes.FIRE]
@@ -38,9 +41,30 @@ class Bot:
         return []
 
     def camp(self):
-        return []
-        #target = list(enemies.items())[0][1]
-        #x,y,X,Y = self.state.objects[self.id]['X'],self.state.objects[self.id]['Y'],target['X'],target['Y']  
+        enemies = self.state.enemies(self.teamname)
+        if len(enemies) == 0:
+            return []
+
+        # find closest enemy
+        bestDist = 1000000
+        target = None
+        for enemy in enemies.items():
+            D = dist(self.getAttr('X'),self.getAttr('Y'), enemy[1]['X'],enemy[1]['Y'])
+            if D < bestDist:
+                bestDist = D
+                target = enemy[1]
+
+        TurretHeadingMsg = self.turnTurretToHeading(target['X'],target['Y'])
+        TurretHeadingAmount = TurretHeadingMsg[1]['Amount']
+
+        print(self.fullname,'camping',target['X'],target['Y'],TurretHeadingAmount,'Im heading',self.getAttr('TurretHeading'))
+
+        # if we are already aiming at it, shoot
+        #if abs(TurretHeadingAmount - self.getAttr('TurretHeading')) < 1:
+        return [ TurretHeadingMsg, self.fire() ]
+     #   else: #turn turret to the enemy
+      #      print('Turning to ',TurretHeadingMsg)
+       #     return [ TurretHeadingMsg ]
 
     def receiveMessage(self, message):
         messageType = message['messageType']
@@ -64,7 +88,6 @@ class Bot:
         else:
             return self.getToGoal()
 
-        enemies = self.state.enemies(self.teamname)
         return response
 
     def activate(self):
