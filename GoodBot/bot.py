@@ -81,7 +81,7 @@ class Bot:
         if target == -1:
             enemies = self.state.enemies(self.teamname)
             for id, enemy in enemies.items():
-                if dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < 100 and (target == -1 or enemy['Health'] < target['Health'] or (enemy['Health'] == target['Health'] and dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']))):
+                if dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < 100 and enemy['Health'] >= 1 and (target == -1 or enemy['Health'] < target['Health'] or (enemy['Health'] == target['Health'] and dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']))):
                     target = enemy
         if target == -1:
             return []
