@@ -38,7 +38,21 @@ class Bot:
         return response
 
     def getAmmo(self):
-        return []
+        ammo = self.state.ammo()
+        closest = None
+        mindist = None
+        for pickup in ammo.items():
+            dist = dist(self.getAttr('X'), self.getAttr('Y'),pickup[1]['X'], pickup[1]['Y'])
+            if dist < mindist:
+                closest = pickup[1]
+                mindist = dist
+        if closest == None:
+            return []
+
+        response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), closest['X'], closest['Y']) )
+        response.append(self.moveForward(mindist))
+        return response
+
 
     def camp(self):
         enemies = self.state.enemies(self.teamname)
@@ -79,7 +93,6 @@ class Bot:
 
         if self.id is None:
             return []
-
         Ypos = self.state.getAttr(self.id, 'Y')
         if abs(Ypos) > 100 and self.state.getAttr(self.id, 'Ammo') > 0: # we are in goal with ammo, camp
             return self.camp()

@@ -22,3 +22,10 @@ class State:
             if teamname not in self.objects[Id]['Name'] and self.objects[Id]['Type'] == 'Tank':
                 res[Id] = copy.deepcopy(self.objects[Id])
         return res
+
+    def ammo(self):
+        res = {}
+        for Id in self.objects:
+            if self.objects[Id]['Type'] == 'AmmoPickup':
+                res[Id] = copy.deepcopy(self.objects[Id])
+        return res
