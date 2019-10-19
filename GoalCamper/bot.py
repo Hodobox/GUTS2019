@@ -2,7 +2,7 @@ from serverComms import *
 from mathfuncs import *
 import sys
 import random
-
+import time
 class Bot:
 
     def __init__(self,name,server,port,state):
@@ -14,7 +14,7 @@ class Bot:
         self.port = port
         self.state = state
         self.id = None
-
+        self.lastSeen = None
     def getAttr(self,Attr):
         return self.state.getAttr(self.id,Attr)
 
@@ -61,7 +61,7 @@ class Bot:
         response.append(self.moveForward(abs(self.getAttr('Y')-targetY)+1))
         return response
 
-    def switchGoals:
+    def switchGoals(self):
         response = self.violence()
 
         #get to goal
@@ -125,6 +125,20 @@ class Bot:
             response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),0,0))
             response.append(self.moveForward(25))
             return response
+
+        bestDist = 1000000
+        for enemy in self.state.enemies(self.teamname).items():
+            D = dist(self.getAttr('X'),self.getAttr('Y'), enemy[1]['X'],enemy[1]['Y'])
+            if D < bestDist:
+                bestDist = D
+
+
+        if bestDist < 100 or self.lastSeen == None:
+            self.lastSeen = time.time()
+        elif time.time() - self.lastSeen > 5:
+            print("Switching goals. ")
+            return self.switchGoals()
+
 
         Ypos = self.state.getAttr(self.id, 'Y')
         if abs(Ypos) > 100 and self.state.getAttr(self.id, 'Ammo') > 2: # we are in goal with ammo, camp
