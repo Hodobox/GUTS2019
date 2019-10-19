@@ -1,6 +1,7 @@
 from serverComms import *
 from mathfuncs import *
 import sys
+import random
 
 class Bot:
 
@@ -58,7 +59,10 @@ class Bot:
     def camp(self):
         enemies = self.state.enemies(self.teamname)
         if len(enemies) == 0:
-            return [ self.turnTurretToHeading(0,0) ]
+            if random.choice([False,True]):
+                return [ self.turnTurretToHeading(0,0) ]
+            else:
+                return [ [ ServerMessageTypes.TURNTURRETLEFT, {'Amount' : 47} ] ]
 
         # find closest enemy
         bestDist = 1000000
@@ -68,6 +72,9 @@ class Bot:
             if D < bestDist:
                 bestDist = D
                 target = enemy[1]
+
+        if bestDist > 100:
+            return []
 
         TurretHeadingMsg = self.turnTurretToHeading(target['X'],target['Y'])
         TurretHeadingAmount = TurretHeadingMsg[1]['Amount']

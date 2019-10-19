@@ -12,13 +12,15 @@ class State:
         obj['time'] = time.time()
         self.objects[ obj['Id'] ] = obj
 
-        if time.time() - self.last_clear > 5:
+        if time.time() - self.last_clear > 4:
             self.last_clear = time.time()
+            print(time.time())
             outdated = []
             for key in self.objects:
                 if time.time() - self.objects[key]['time'] > 5:
                     outdated.append(key)
             for trash in outdated:
+                print('throwing out',self.objects[trash])
                 self.objects.pop(trash)
 
     def getAttr(self, Id, Attr):
