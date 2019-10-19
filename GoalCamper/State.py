@@ -1,5 +1,6 @@
 import time
 import copy
+from math import *
 
 class State:
 
@@ -23,7 +24,7 @@ class State:
 
         if time.time() - self.last_clear > 4:
             self.last_clear = time.time()
-            print(time.time())
+            #print(time.time())
             outdated = []
             for key in self.objects:
                 if time.time() - self.objects[key]['time'] > 5:
