@@ -38,7 +38,22 @@ class Bot:
         return response
 
     def getAmmo(self):
-        return []
+        response = []
+        ammo = self.state.ammo()
+        closest = None
+        mindist = 1000000
+        for pickup in ammo.items():
+            distance = dist(self.getAttr('X'), self.getAttr('Y'),pickup[1]['X'], pickup[1]['Y'])
+            if distance < mindist:
+                closest = pickup[1]
+                mindist = distance
+        if closest == None:
+            return []
+
+        response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), closest['X'], closest['Y']) )
+        response.append(self.moveForward(mindist))
+        return response
+
 
     def camp(self):
         enemies = self.state.enemies(self.teamname)
@@ -71,8 +86,6 @@ class Bot:
 
         if self.id is None:
             return []
-
-
         if messageType == ServerMessageTypes.KILL:
             response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),0,0))
             response.append(self.moveForward(25))
