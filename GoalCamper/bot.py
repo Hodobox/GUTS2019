@@ -30,6 +30,13 @@ class Bot:
     def moveForward(self, dist):
         return [ServerMessageTypes.MOVEFORWARDDISTANCE,{'Amount' : dist}]
 
+    def sumTeamDist(self, x, y):
+        res = 0
+        for objId in self.state.objects:
+            if self.state.getAttr(objId, 'Type') == 'Tank' and self.teamname in self.state.getAttr(objId, 'Name'):
+                res += dist(self.state.getAttr(objId,'X'),self.state.getAttr(objId,'Y'),x,y)
+        return res
+
     def violence(self):
          
         response = []
@@ -73,8 +80,11 @@ class Bot:
     def getToGoal(self):
         response = self.violence()
 
+        sumLeft = self.sumTeamDist(0,-100)
+        sumRight = self.sumTeamDist(0,100)
+
         #get to goal
-        targetY = -103 if self.getAttr('Y') < 0 else 103
+        targetY = -103 if sumLeft < sumRight else 103
         targetX = 12 - 8*self.number
         response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), targetX, targetY ) )
         response.append(self.moveForward(abs(self.getAttr('Y')-targetY)+1))
