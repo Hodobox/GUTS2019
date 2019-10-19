@@ -9,6 +9,7 @@ class State:
         self.objects = {}
         self.last_clear = time.time()
         self.suicides = set()
+        self.snitch = None
 
     def update(self, obj):
         
