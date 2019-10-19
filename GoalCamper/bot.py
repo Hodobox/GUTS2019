@@ -32,6 +32,26 @@ class Bot:
 
     def getToGoal(self):
         response = []
+
+        # fire while getting to goal
+        enemies = self.state.enemies(self.teamname)
+        # find closest enemy
+        bestDist = 1000000
+        target = None
+        for enemy in enemies.items():
+            D = dist(self.getAttr('X'),self.getAttr('Y'), enemy[1]['X'],enemy[1]['Y'])
+            if D < bestDist:
+                bestDist = D
+                target = enemy[1]
+
+        if bestDist < 100:
+            #preaim enemy
+            prex, prey = preaim(self.getAttr('X'), self.getAttr('Y'), target)
+            TurretHeadingMsg = self.turnTurretToHeading(prex, prey)
+            TurretHeadingAmount = TurretHeadingMsg[1]['Amount']
+            response += [TurretHeadingMsg, self.fire()]
+
+        #get to goal
         targetY = -103 if self.getAttr('Y') < 0 else 103
         targetX = 12 - 8*self.number
         response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), targetX, targetY ) )
@@ -39,7 +59,27 @@ class Bot:
         return response
 
     def getAmmo(self):
+
         response = []
+        # fire while looking for ammo
+        enemies = self.state.enemies(self.teamname)
+        # find closest enemy
+        bestDist = 1000000
+        target = None
+        for enemy in enemies.items():
+            D = dist(self.getAttr('X'),self.getAttr('Y'), enemy[1]['X'],enemy[1]['Y'])
+            if D < bestDist:
+                bestDist = D
+                target = enemy[1]
+
+        if bestDist < 100:
+            #preaim enemy
+            prex, prey = preaim(self.getAttr('X'), self.getAttr('Y'), target)
+            TurretHeadingMsg = self.turnTurretToHeading(prex, prey)
+            TurretHeadingAmount = TurretHeadingMsg[1]['Amount']
+            response += [TurretHeadingMsg, self.fire()]
+
+        #find ammo pickup
         ammo = self.state.ammo()
         closest = None
         mindist = 1000000
@@ -49,8 +89,14 @@ class Bot:
                 closest = pickup[1]
                 mindist = distance
         if closest == None:
-            return []
-
+            response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), 0, 0) )
+            response.append(self.moveForward(dist(self.getAttr('X'), self.getAttr('Y'), 0, 0)))
+            if random.choice([False,True]):
+                response.append(self.turnTurretToHeading(-100,-100))
+            else:
+                response.append(self.turnTurretToHeading(100,100))
+            return response
+        # move to ammo
         response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), closest['X'], closest['Y']) )
         response.append(self.moveForward(mindist))
         return response
@@ -99,9 +145,9 @@ class Bot:
             return response
 
         Ypos = self.state.getAttr(self.id, 'Y')
-        if abs(Ypos) > 100 and self.state.getAttr(self.id, 'Ammo') > 0: # we are in goal with ammo, camp
+        if abs(Ypos) > 100 and self.state.getAttr(self.id, 'Ammo') > 2: # we are in goal with ammo, camp
             return self.camp()
-        elif self.state.getAttr(self.id, 'Ammo') == 0:
+        elif self.state.getAttr(self.id, 'Ammo') < 3:
             return self.getAmmo()
         else:
             return self.getToGoal()
