@@ -19,7 +19,8 @@ def preaim(x, y, target):
 	#velocity = 25
 	X = target['X']
 	Y = target['Y']
+	distance = dist(X, Y, x, y)
 	if 'dx' in target.keys() and 'dy' in target.keys():
-		return (X + dist(X, Y, x, y)/25*target['dx'], Y + dist(X, Y, x, y)/25*target['dy'])
+		return (X + distance/25*target['dx'], Y + distance/25*target['dy'])
 	else: 
-		return (X + cos(DegToRad(target['Heading']))*dist(X, Y, x, y)/25*10, Y + sin(DegToRad(target['Heading']))*dist(X, Y, x, y)/25*10)
+		return (X + cos(DegToRad(target['Heading']))*distance/25*10, Y + sin(DegToRad(target['Heading']))*distance/25*10)
