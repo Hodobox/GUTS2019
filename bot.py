@@ -12,6 +12,7 @@ class Bot:
         self.port = port
         self.state = state
         self.id = None
+        self.lock = False
 
     def receiveMessage(self, message):
         messageType = message['messageType']
@@ -20,21 +21,40 @@ class Bot:
 
         if messageType == ServerMessageTypes.OBJECTUPDATE:
             self.state.update(message)
-            logging.info(message)
+            #logging.info(message)
             if self.id is None and message['Name'] == self.fullname:
                 self.id = message['Id']
-            #else:
-                #logging.info(self.fullname + ' ' + message['Name'])
+        elif messageType == ServerMessageTypes.KILL:
+            x,y,X,Y = self.state.objects[self.id]['X'],self.state.objects[self.id]['Y'],0,-100
+            goalheading = getHeading(x,y,X,Y)
+            response.append([ServerMessageTypes.TURNTOHEADING,{'Amount' : goalheading}])
+            response.append([ServerMessageTypes.MOVEFORWARDDISTANCE,{'Amount':20}])
+            self.lock = True
+            return response
+        elif messageType == ServerMessageTypes.ENTEREDGOAL:
+            response.append([ServerMessageTypes.TURNTOHEADING,{'Amount' : 270}])
+            response.append([ServerMessageTypes.MOVEFORWARDDISTANCE,{'Amount':100}])
+            self.lock = False
+            return response
+        elif messageType == ServerMessageTypes.DESTROYED:
+            self.lock = False
 
         if self.id is None:
             return []
+
+        if self.lock:
+            x,y,X,Y = self.state.objects[self.id]['X'],self.state.objects[self.id]['Y'],0,-100
+            goalheading = getHeading(x,y,X,Y)
+            response.append([ServerMessageTypes.TURNTOHEADING,{'Amount' : goalheading}])
+            response.append([ServerMessageTypes.MOVEFORWARDDISTANCE,{'Amount':20}])
+            return response
 
         enemies = self.state.enemies(self.teamname)
 
         if len(enemies) > 0:
             target = list(enemies.items())[0][1]
             x,y,X,Y = self.state.objects[self.id]['X'],self.state.objects[self.id]['Y'],target['X'],target['Y']
-            print('I am at',x,y,'target is at',X,Y)
+            #print('I am at',x,y,'target is at',X,Y)
             heading = getHeading(x,y,X,Y)
             if abs(heading - self.state.objects[self.id]['TurretHeading']) < 1:
                 print('firing')
