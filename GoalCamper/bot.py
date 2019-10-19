@@ -157,6 +157,7 @@ class Bot:
                 self.state.suicides.add(self.id)
 
         if messageType == ServerMessageTypes.DESTROYED:
+            print(self.id,': died and lost',self.points)
             self.points = 0
             if self.id in self.state.suicides:
                 print(self.id,': I want to live')
@@ -165,11 +166,18 @@ class Bot:
 
         if messageType == ServerMessageTypes.KILL:
             self.points += 1
+            print(self.id,' has a kill!')
             if self.id in self.state.suicides:
+                print(self.id,': I want to live')
                 self.state.suicides.remove(self.id)
 
         if messageType == ServerMessageTypes.ENTEREDGOAL:
             self.points = 0
+
+        if messageType == ServerMessageTypes.HEALTHPICKUP:
+            if self.id in self.state.suicides:
+                print(self.id,': I want to live')
+                self.state.suicides.remove(self.id)
 
         if self.id is None:
             return []

@@ -23,4 +23,4 @@ def preaim(x, y, target):
 	if 'dx' in target.keys() and 'dy' in target.keys():
 		return (X + distance/25*target['dx'], Y + distance/25*target['dy'])
 	else: 
-		return (X + cos(DegToRad(target['Heading']))*distance/25*10, Y + sin(DegToRad(target['Heading']))*distance/25*10)
+		return (X + cos(DegToRad(target['Heading']))*distance/25*9, Y + sin(DegToRad(target['Heading']))*distance/25*9)

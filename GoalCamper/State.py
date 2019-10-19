@@ -34,7 +34,7 @@ class State:
                 if time.time() - self.objects[key]['time'] > 5:
                     outdated.append(key)
             for trash in outdated:
-                print('throwing out',self.objects[trash])
+                #print('throwing out',self.objects[trash])
                 self.objects.pop(trash)
 
     def getAttr(self, Id, Attr):
