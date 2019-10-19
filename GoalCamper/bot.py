@@ -15,6 +15,8 @@ class Bot:
         self.state = state
         self.id = None
         self.lastSeen = None
+        self.points = 0
+
     def getAttr(self,Attr):
         return self.state.getAttr(self.id,Attr)
 
@@ -150,21 +152,36 @@ class Bot:
 
         if messageType == ServerMessageTypes.HITDETECTED:
             print(self.id,'has been hit. Health:',self.getAttr('Health'))
-            if self.getAttr('Health') == 2:
+            if self.getAttr('Health') == 2 and self.points == 0:
                 print(self.id,': I am suiciding')
                 self.state.suicides.add(self.id)
 
         if messageType == ServerMessageTypes.DESTROYED:
+            self.points = 0
             if self.id in self.state.suicides:
                 print(self.id,': I want to live')
                 self.state.suicides.remove(self.id)
 
+
+        if messageType == ServerMessageTypes.KILL:
+            self.points += 1
+            if self.id in self.state.suicides:
+                self.state.suicides.remove(self.id)
+
+        if messageType == ServerMessageTypes.ENTEREDGOAL:
+            self.points = 0
+
         if self.id is None:
             return []
-        if messageType == ServerMessageTypes.KILL and abs(self.getAttr('Y')) > 100:
-            response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),0,0))
-            response.append(self.moveForward(25))
-            return response
+        
+        if self.points > 0:
+            if abs(self.getAttr('Y')) > 99:
+                response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),0,0))
+                response.append(self.moveForward( abs(self.getAttr('Y')-99) + 5 ))
+                response += self.violence()
+                return response
+            else:
+                return self.getToGoal()
 
         bestDist = 1000000
         for enemy in self.state.enemies(self.teamname).items():
