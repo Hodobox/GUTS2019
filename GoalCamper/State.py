@@ -13,10 +13,13 @@ class State:
         
         if obj['Id'] in self.objects and obj['Type'] == 'Tank':
             timediff = time.time() - self.objects[obj['Id']]['time']
-            dx = obj['X'] - self.objects[ obj['Id'] ]['X']
-            dy = obj['Y'] - self.objects[ obj['Id'] ]['Y']
-            velocity = sqrt(dx**2 + dy**2)
-            obj['velocity'] = velocity
+            if timediff != 0:
+                dx = obj['X'] - self.objects[ obj['Id'] ]['X']
+                dy = obj['Y'] - self.objects[ obj['Id'] ]['Y']
+                # velocity = sqrt(dx**2 + dy**2)
+                # obj['velocity'] = velocity
+                obj['dy'] = dy/timediff
+                obj['dx'] = dx/timediff
 
         obj['time'] = time.time()
 
