@@ -1,4 +1,5 @@
 from serverComms import *
+from mathfuncs import *
 import sys
 
 class Bot:
@@ -10,29 +11,38 @@ class Bot:
         self.server = server
         self.port = port
         self.state = state
+        self.id = None
 
     def receiveMessage(self, message):
         messageType = message['messageType']
         response = []
-        logging.info(message)
+        #logging.info(message)
 
         if messageType == ServerMessageTypes.OBJECTUPDATE:
-            pass
-            #self.state.update(message)
+            self.state.update(message)
+            logging.info(message)
+            if self.id is None and message['Name'] == self.fullname:
+                self.id = message['Id']
+            #else:
+                #logging.info(self.fullname + ' ' + message['Name'])
 
-        if self.i == 5:
-            if random.randint(0, 10) > 5:
-                logging.info("Firing")
+        if self.id is None:
+            return []
+
+        enemies = self.state.enemies(self.teamname)
+
+        if len(enemies) > 0:
+            target = list(enemies.items())[0][1]
+            x,y,X,Y = self.state.objects[self.id]['X'],self.state.objects[self.id]['Y'],target['X'],target['Y']
+            print('I am at',x,y,'target is at',X,Y)
+            heading = getHeading(x,y,X,Y)
+            if abs(heading - self.state.objects[self.id]['TurretHeading']) < 1:
+                print('firing')
                 response.append([ServerMessageTypes.FIRE])
-        elif self.i == 10:
-            #logging.info("Turning randomly")
-            response.append((ServerMessageTypes.TURNTOHEADING, {'Amount': random.randint(0, 359)}))
-        elif self.i == 15:
-            #logging.info("Moving randomly")
-            response.append((ServerMessageTypes.MOVEFORWARDDISTANCE, {'Amount': random.randint(0, 10)}))
-        self.i = self.i + 1
-        if self.i > 20:
-            self.i = 0
+            else:
+                print('turning',heading)
+                response.append([ServerMessageTypes.TURNTOHEADING,{'Amount' : heading}])
+
         return response
 
     def activate(self):
