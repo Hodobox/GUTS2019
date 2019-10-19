@@ -61,9 +61,8 @@ class Bot:
         if len(enemies) == 0:
             if random.choice([False,True]):
                 return [ self.turnTurretToHeading(0,0) ]
-            else:
-                return [ [ ServerMessageTypes.TURNTURRETLEFT, {'Amount' : 47} ] ]
-
+            # else:
+            #     return [ self.turnTurretToHeading(100,100) ]
         # find closest enemy
         bestDist = 1000000
         target = None
@@ -72,6 +71,8 @@ class Bot:
             if D < bestDist:
                 bestDist = D
                 target = enemy[1]
+
+        print('camping target dist',bestDist)
 
         if bestDist > 100:
             return []
