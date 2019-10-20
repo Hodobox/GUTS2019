@@ -138,6 +138,10 @@ class Bot:
         response.append(self.moveForward(mindist))
         return response
 
+    # returns True if we want to go get health
+    def getHealth(self, response):
+        health = self.state.health()
+        return False
 
     def camp(self):
         enemies = self.state.enemies(self.teamname)
@@ -233,8 +237,10 @@ class Bot:
             print("Switching goals. ")
             return self.switchGoals()
 
-
-
+        response = self.violence()
+        if self.getAttr('Health') < 3:
+            if self.getHealth(response):
+                return response
 
 
         Ypos = self.state.getAttr(self.id, 'Y')

@@ -68,3 +68,10 @@ class State:
             if self.objects[Id]['Type'] == 'AmmoPickup':
                 res[Id] = copy.deepcopy(self.objects[Id])
         return res
+
+    def health(self):
+        res = {}
+        for Id in self.objects:
+            if self.objects[Id]['Type'] == 'HealthPickup':
+                res[Id] = copy.deepcopy(self.objects[Id])
+        return res
