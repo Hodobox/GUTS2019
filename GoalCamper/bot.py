@@ -216,7 +216,9 @@ class Bot:
         if messageType == ServerMessageTypes.OBJECTUPDATE:
             self.state.update(message)
             #print(time.time() - self.state.Last_point_scored)
-            if time.time() - self.state.Last_point_scored > 47:
+            if self.state.Last_point_scored == None:
+                self.state.Last_point_scored = time.time()
+            elif if time.time() - self.state.Last_point_scored > 47:
                 print('RAMBO ACTIVATED')
                 self.state.RAMBO_SWITCHING = True
             #logging.info(message)
@@ -304,7 +306,7 @@ class Bot:
         if bestDist < 100 or self.lastSeen == None:
             self.lastSeen = time.time()
         elif time.time() - self.lastSeen > 5:
-            print("Switching goals.")
+            #print("Switching goals.")
             return self.switchGoals()
 
         if  self.switchGoal != None:
