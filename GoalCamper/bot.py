@@ -16,6 +16,7 @@ class Bot:
         self.id = None
         self.lastSeen = None
         self.points = 0
+        self.switchGoal = None
 
     def getAttr(self,Attr):
         return self.state.getAttr(self.id,Attr)
@@ -32,16 +33,40 @@ class Bot:
     def moveForward(self, dist):
         return [ServerMessageTypes.MOVEFORWARDDISTANCE,{'Amount' : dist}]
 
+    def moveBackward(self, dist):
+        return [ ServerMessageTypes.MOVEBACKWARSDISTANCE,{'Amount' : dist} ]
+
+    def turnToHeadingBackwards(self,x,y,X,Y):
+        return [ServerMessageTypes.TURNTOHEADING, {'Amount' : oppositeDegree(getHeading(x,y,X,Y)) }]
+
     def moveToPointFixedDist(self, x,y, DIST):
         response = []
-        response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),x,y))
-        response.append(self.moveForward(DIST))
+
+        turnForwardTime = ForwardTurnTime(self.getAttr('Heading'), self.getAttr('X'),self.getAttr('Y'),x,y)
+        turnBackwardTime = BackwardTurnTime(self.getAttr('Heading'),self.getAttr('X'),self.getAttr('Y'),x,y)
+
+        if turnForwardTime > turnBackwardTime:
+            response.append(self.turnToHeadingBackwards(self.getAttr('X'),self.getAttr('Y'),x,y))
+            response.append(self.moveBackward(DIST))
+        else:
+            response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),x,y))
+            response.append(self.moveForward(DIST))
+
         return response
 
     def moveToPoint(self,x,y,overhead=0):
         response = []
-        response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),x,y))
-        response.append(self.moveForward(dist(self.getAttr('X'),self.getAttr('Y'),x,y)+overhead))
+
+        turnForwardTime = ForwardTurnTime(self.getAttr('Heading'),self.getAttr('X'),self.getAttr('Y'),x,y)
+        turnBackwardTime = BackwardTurnTime(self.getAttr('Heading'),self.getAttr('X'),self.getAttr('Y'),x,y)
+
+        if turnForwardTime > turnBackwardTime:
+            response.append(self.turnToHeadingBackwards(self.getAttr('X'),self.getAttr('Y'),x,y))
+            response.append(self.moveBackward(dist(self.getAttr('X'),self.getAttr('Y'),x,y)+overhead))
+        else:
+            response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),x,y))
+            response.append(self.moveForward(dist(self.getAttr('X'),self.getAttr('Y'),x,y)+overhead))
+
         return response
 
     def sumTeamDist(self, x, y):
@@ -119,10 +144,19 @@ class Bot:
     def switchGoals(self):
         response = self.violence()
 
-        #get to goal
-        targetY = 103 if self.getAttr('Y') < 0 else -103
-        targetX = 12 - 8*self.number
-        response += self.moveToPoint(targetX, targetY)
+        if self.switchGoal == None:
+            #get to goal
+            targetY = 103 if self.getAttr('Y') < 0 else -103
+            targetX = 12 - 8*self.number
+            response += self.moveToPoint(targetX, targetY)
+            self.switchGoal = targetY
+        else:
+            if abs(self.switchGoal - self.getAttr('Y')) < 5:
+                self.switchGoal = None
+                print('Rambo can rest')
+            else:
+                targetX = 12 - 8*self.number
+                response += self.moveToPoint(targetX, self.switchGoal)
         return response
 
     def getAmmo(self):
@@ -219,6 +253,13 @@ class Bot:
 
         if self.id is None:
             return []
+
+        # Do not touch unless you need to unleash more than 5% of your power
+        #if self.getAttr('Health') == 1:
+        #    print(self.id,'is being banished to the shadow realm!!!')
+        #    self.id = None
+        #    return [ [ServerMessageTypes.DESPAWNTANK] , [ServerMessageTypes.CREATETANK, {'Name' : self.fullname} ] ]
+
         
         if self.points > 0:
             if abs(self.getAttr('Y')) > 99:
@@ -249,7 +290,11 @@ class Bot:
         if bestDist < 100 or self.lastSeen == None:
             self.lastSeen = time.time()
         elif time.time() - self.lastSeen > 5:
-            print("Switching goals. ")
+            print("Switching goals.")
+            return self.switchGoals()
+
+        if  self.switchGoal != None:
+            print('Rambo switch')
             return self.switchGoals()
 
         response = self.violence()
