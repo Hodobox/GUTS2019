@@ -47,13 +47,19 @@ class Bot:
         bestDist = 1000000
         target = None
         snitch = False
+        
+        #if self.state.snitch:
+           #print('maybe snitch violence',self.state.snitch)
+
         for enemy in enemies.items():
             D = dist(self.getAttr('X'),self.getAttr('Y'), enemy[1]['X'],enemy[1]['Y'])
+            #if self.state.snitch == enemy[1]['Id']:
+                #print('oooh ',enemy[1]['Id'],D)
             if (D < bestDist and snitch == False) or (D < 100 and self.state.snitch != None and enemy[1]['Id'] == self.state.snitch):
                 bestDist = D
                 target = enemy[1]
                 if(D < 100 and self.state.snitch != None and enemy[1]['Id'] == self.state.snitch):
-                    print('REEE SNITCH')
+                    #print('REEE SNITCH')
                     snitch = True
 
         if (bestDist < 80) or (bestDist < 100 and len(self.state.suicides) > 1 + (1 if self.id in self.state.suicides else 0) ):
@@ -132,6 +138,17 @@ class Bot:
         response.append(self.moveForward(mindist))
         return response
 
+    # returns True if we want to go get health
+    def getHealth(self, response):
+        health = self.state.health()
+        for objId in health:
+            D = dist(self.getAttr('X'),self.getAttr('Y'),health[objId]['X'],health[objId]['Y'])
+            if D < 50:
+                response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), health[objId]['X'],health[objId]['Y']) )
+                response.append(self.moveForward(D+1))
+                print(self.id, 'I NEED HEALING')
+                return True
+        return False
 
     def camp(self):
         enemies = self.state.enemies(self.teamname)
@@ -184,7 +201,8 @@ class Bot:
 
         if messageType == ServerMessageTypes.SNITCHPICKUP:
             Id = message['Id']
-
+            print('SNITCHER',Id)
+            self.state.snitch = Id
             if Id == self.id:
                 print('lol I has snitch')
                 self.points += 5
@@ -195,11 +213,23 @@ class Bot:
         if self.points > 0:
             if abs(self.getAttr('Y')) > 99:
                 response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),0,0))
-                response.append(self.moveForward( abs(self.getAttr('Y')-99) + 5 ))
+                response.append(self.moveForward( abs(self.getAttr('Y')-99) + 3 ))
                 response += self.violence()
                 return response
             else:
                 return self.getToGoal()
+
+        if self.state.snitchObj != None:
+            #print(self.id,'afaik',dist(self.getAttr('X'),self.getAttr('Y'),self.state.getSnitch()['X'],self.state.getSnitch()['Y']),'from being harry')
+            if dist(self.getAttr('X'),self.getAttr('Y'),self.state.getSnitch()['X'],self.state.getSnitch()['Y']) < 25:
+                print(self.id,'I am harry potter!!!')
+                response = self.violence()
+                if time.time() - self.state.getSnitch()['time'] > 3:
+                    #print(self.id,'Fix your glasses harry!!!')
+                    response = [ self.turnTurretToHeading(self.state.getSnitch()['X'],self.state.getSnitch()['Y']) ]
+                response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),self.state.getSnitch()['X'],self.state.getSnitch()['Y']))
+                response.append(self.moveForward( dist(self.getAttr('X'),self.getAttr('Y'),self.state.getSnitch()['X'],self.state.getSnitch()['Y']) + 5 ))
+                return response
 
         bestDist = 1000000
         for enemy in self.state.enemies(self.teamname).items():
@@ -213,6 +243,11 @@ class Bot:
         elif time.time() - self.lastSeen > 5:
             print("Switching goals. ")
             return self.switchGoals()
+
+        response = self.violence()
+        if self.getAttr('Health') < 3:
+            if self.getHealth(response):
+                return response
 
 
         Ypos = self.state.getAttr(self.id, 'Y')
