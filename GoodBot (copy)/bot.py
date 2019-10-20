@@ -153,7 +153,7 @@ class Bot:
             for id, enemy in enemies.items():
                 #sx, sy = self.predict(enemy)
                 sx, sy = enemy['X'], enemy['Y']
-                if dist(self.getAttr('X'), self.getAttr('Y'), sx, sy) < 100 and enemy['Health'] >= 1 and (target == -1 or target['Id'] != self.state.snitch_id) and (target == -1 or dist(self.getAttr('X'), self.getAttr('Y'), sx, sy) < dist(self.getAttr('X'), self.getAttr('Y'), tx, ty)) and self.safeShot(enemy, sx, sy):
+                if dist(self.getAttr('X'), self.getAttr('Y'), sx, sy) < 100 and enemy['Health'] >= 1 and (target == -1 or target['Id'] != self.state.snitch_id) and (target == -1 or enemy['Health'] < target['Health'] or (enemy['Health'] == target['Health'] and dist(self.getAttr('X'), self.getAttr('Y'), sx, sy) < dist(self.getAttr('X'), self.getAttr('Y'), tx, ty))) and self.safeShot(enemy, sx, sy):
                     target = enemy
                     tx, ty = sx, sy
         if target == -1:
