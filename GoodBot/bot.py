@@ -44,17 +44,18 @@ class Bot:
             neg, pos = 0, 0
             enemies = self.state.enemies(self.teamname)
             for id, enemy in enemies.items():
-                if dist(enemy['X'], enemy['Y'], 0, -100) < 40:
+                if enemy['X'] < self.getAttr('X'):
                     neg += 1
-                if dist(enemy['X'], enemy['Y'], 0, 100) < 40:
+                if enemy['X'] > self.getAttr('X'):
                     pos += 1
             gx = 0
-            if neg < pos:
+            if pos > 2:
                 gy = -105
-            elif neg > pos:
+            elif neg > 2:
                 gy = 105
             else:
                 gy = -105 if self.getAttr('Y') < 0 else 105
+            print(self.i, gy, "objective")
         elif self.getAttr('Health') <= 1 or (self.getAttr('Health') <= 2 and not self.state.snitch):
             chosen = None
             for _, obj in self.state.objects.items():
@@ -77,19 +78,23 @@ class Bot:
             neg, pos = 0, 0
             enemies = self.state.enemies(self.teamname)
             for id, enemy in enemies.items():
-                if dist(enemy['X'], enemy['Y'], 0, -100) < 40:
+                if enemy['X'] < self.getAttr('X'):
                     neg += 1
-                if dist(enemy['X'], enemy['Y'], 0, 100) < 40:
+                if enemy['X'] > self.getAttr('X'):
                     pos += 1
             gx = 7.5 + 15 * (self.i-2)
-            gy = 85 if neg > pos == 0 else -85
+            if pos > 2:
+                gy = -85
+            elif neg > 2:
+                gy = 85
+            else:
+                gy = -85 if self.getAttr('Y') < 0 else 85
             for id, obj in self.state.objects.items():
                 if obj['Type'] == 'Snitch':
-                    print("Going after the snitch")
                     gx = obj['X']
                     gy = obj['Y']
                     flag = True
-
+            print(self.i, gy, "bored")
         if abs(getHeading(self.getAttr('X'), self.getAttr('Y'), gx, gy) - self.getAttr('Heading')) < self.minTurn:
             MoveForwardMsg = self.moveForward(10)
             return [ MoveForwardMsg ]
@@ -104,6 +109,7 @@ class Bot:
     def shoot(self):
         target = -1
         allies = self.state.allies(self.teamname)
+        flag = False
         for id, ally in allies.items():
             if id != self.id and ally['Health'] == 1 and self.state.kills[id] == 0 and self.state.snitch_id != id:
                 target = ally
@@ -113,9 +119,14 @@ class Bot:
             for id, enemy in enemies.items():
                 if dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < 100 and enemy['Health'] >= 1 and (target == -1 or enemy['Health'] < target['Health'] or (enemy['Health'] == target['Health'] and dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']))):
                     target = enemy
+        for id, obj in self.state.objects.items():
+            if obj['Type'] == 'Snitch' and dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < 25:
+                target = obj
+                flag = True
         if target == -1:
-            return []
-        if abs(getHeading(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']) - self.getAttr('TurretHeading')) < self.minTurn:
+            print("spinning")
+            return [ [ ServerMessageTypes.TURNTURRETTOHEADING, { 'Amount' : ((self.getAttr('TurretHeading') + 30) % 360) } ] ]
+        if not flag and abs(getHeading(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']) - self.getAttr('TurretHeading')) < self.minTurn:
             FireMsg = self.fire()
             return [ FireMsg ]
         else:
