@@ -56,7 +56,7 @@ class Bot:
             else:
                 gy = -105 if self.getAttr('Y') < 0 else 105
             print(self.i, gy, "objective")
-        elif self.getAttr('Health') <= 1 or (self.getAttr('Health') <= 2 and not self.state.snitch):
+        elif self.getAttr('Health') <= 1 or (self.getAttr('Health') <= 1 and not self.state.snitch):
             chosen = None
             for _, obj in self.state.objects.items():
                 if obj['Type'] == 'HealthPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id or self.state.objects[self.state.pickups[obj['Id']]]['Health'] <= 0) and (chosen is None or dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), chosen['X'], chosen['Y'])):
@@ -65,7 +65,7 @@ class Bot:
                 self.state.pickups[chosen['Id']] = self.id
                 gx = chosen['X']
                 gy = chosen['Y']
-        elif self.getAttr('Ammo') <= 0 or (self.getAttr('Ammo') <= 5 and not self.state.snitch):
+        elif self.getAttr('Ammo') <= 0 or (self.getAttr('Ammo') <= 2 and not self.state.snitch):
             chosen = None
             for _, obj in self.state.objects.items():
                 if obj['Type'] == 'AmmoPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id or self.state.objects[self.state.pickups[obj['Id']]]['Health'] <= 0) and (chosen is None or dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), chosen['X'], chosen['Y'])):
@@ -117,7 +117,7 @@ class Bot:
         if target == -1:
             enemies = self.state.enemies(self.teamname)
             for id, enemy in enemies.items():
-                if dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < 100 and enemy['Health'] >= 1 and (target == -1 or enemy['Health'] < target['Health'] or (enemy['Health'] == target['Health'] and dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']))):
+                if dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < 100 and enemy['Health'] >= 1 and (target == 1 or target['Id'] != self.state.snitch_id) and (target == -1 or enemy['Health'] < target['Health'] or (enemy['Health'] == target['Health'] and dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']))):
                     target = enemy
         for id, obj in self.state.objects.items():
             if obj['Type'] == 'Snitch' and dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < 25:
