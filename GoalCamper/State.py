@@ -11,6 +11,8 @@ class State:
         self.suicides = set()
         self.snitch = None
         self.snitchObj = None
+        self.Last_point_scored = time.time()
+        self.RAMBO_SWITCHING = False
 
     def update(self, obj):
         
