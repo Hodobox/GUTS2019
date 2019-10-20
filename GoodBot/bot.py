@@ -101,7 +101,7 @@ class Bot:
             gy = 85 if pos >= 2 else -85
             for id, obj in self.state.objects.items():
                 if obj['Type'] == 'Snitch' and self.state.snitch:
-                    gx, gy = self.predict(obj)
+                    gx, gy = self.snitch_predict(obj, 10.0)
                     flag = True
         if abs(getHeading(self.getAttr('X'), self.getAttr('Y'), gx, gy) - self.getAttr('Heading')) < self.minTurn:
             MoveForwardMsg = self.moveForward(10)
@@ -121,9 +121,8 @@ class Bot:
                 return False
         return True
 
-    def predict(self, obj):
+    def predict(self, obj, c = 0.0):
         sx, sy = obj['X'], obj['Y']
-        return sx, sy
         if obj['Id'] in self.state.oldObjs:
             dx, dy = obj['X'] - self.state.oldObjs[obj['Id']]['X'], obj['Y'] - self.state.oldObjs[obj['Id']]['Y']
             length = math.hypot(dx, dy)
@@ -131,7 +130,17 @@ class Bot:
                 dx, dy = dx / length, dy / length
                 d = dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y'])
                 if d > 0:
-                    sx, sy = sx + 1.5 * dx * d, sy + 1.5 * dy * d
+                    sx, sy = sx + c * dx * d, sy + c * dy * d
+        return sx, sy
+
+    def snitch_predict(self, obj, c = 0.25):
+        sx, sy = obj['X'], obj['Y']
+        if obj['Id'] in self.state.oldObjs:
+            dx, dy = obj['X'] - self.state.oldObjs[obj['Id']]['X'], obj['Y'] - self.state.oldObjs[obj['Id']]['Y']
+            length = math.hypot(dx, dy)
+            if length > 0:
+                dx, dy = dx / length, dy / length
+                sx, sy = sx + c * dx, sy + c * dy
         return sx, sy
 
     def shoot(self):
