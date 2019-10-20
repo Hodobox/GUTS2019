@@ -19,7 +19,7 @@ class Bot:
         self.port = port
         self.state = state
         self.id = None
-        self.minDist = 5
+        self.minDist = 10
         self.minTurn = 2
 
     def getAttr(self,Attr):
@@ -38,15 +38,15 @@ class Bot:
         return [ServerMessageTypes.MOVEFORWARDDISTANCE,{'Amount' : dist}]
 
     def move(self):
-        gx, gy = 0, 0
+        gx, gy = None, None
         flag = False
         if self.state.kills[self.id] != 0 or self.state.snitch_id == self.id:
             neg, pos = 0, 0
             enemies = self.state.enemies(self.teamname)
             for id, enemy in enemies.items():
-                if enemy['X'] < self.getAttr('X'):
+                if enemy['Y'] < self.getAttr('Y'):
                     neg += 1
-                if enemy['X'] > self.getAttr('X'):
+                if enemy['Y'] > self.getAttr('Y'):
                     pos += 1
             gx = 0
             if pos > 2:
@@ -61,7 +61,7 @@ class Bot:
             for _, obj in self.state.objects.items():
                 if obj['Type'] == 'HealthPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id or self.state.objects[self.state.pickups[obj['Id']]]['Health'] <= 0) and (chosen is None or dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), chosen['X'], chosen['Y'])):
                     chosen = obj
-            if chosen is not None:
+            if chosen is not None and dist(self.getAttr('X'), self.getAttr('Y'), chosen['X'], chosen['Y']) < 100:
                 self.state.pickups[chosen['Id']] = self.id
                 gx = chosen['X']
                 gy = chosen['Y']
@@ -70,19 +70,19 @@ class Bot:
             for _, obj in self.state.objects.items():
                 if obj['Type'] == 'AmmoPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id or self.state.objects[self.state.pickups[obj['Id']]]['Health'] <= 0) and (chosen is None or dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), chosen['X'], chosen['Y'])):
                     chosen = obj
-            if chosen is not None:    
+            if chosen is not None and dist(self.getAttr('X'), self.getAttr('Y'), chosen['X'], chosen['Y']) < 100:    
                 self.state.pickups[chosen['Id']] = self.id
                 gx = chosen['X']
                 gy = chosen['Y']
-        else:
+        if gx is None:
             neg, pos = 0, 0
             enemies = self.state.enemies(self.teamname)
             for id, enemy in enemies.items():
-                if enemy['X'] < self.getAttr('X'):
+                if enemy['Y'] < self.getAttr('Y'):
                     neg += 1
-                if enemy['X'] > self.getAttr('X'):
+                if enemy['Y'] > self.getAttr('Y'):
                     pos += 1
-            gx = 7.5 + 15 * (self.i-2)
+            gx = 5 + 10 * (self.i-2)
             if pos > 2:
                 gy = -85
             elif neg > 2:
@@ -94,7 +94,6 @@ class Bot:
                     gx = obj['X']
                     gy = obj['Y']
                     flag = True
-            print(self.i, gy, "bored")
         if abs(getHeading(self.getAttr('X'), self.getAttr('Y'), gx, gy) - self.getAttr('Heading')) < self.minTurn:
             MoveForwardMsg = self.moveForward(10)
             return [ MoveForwardMsg ]
@@ -117,7 +116,7 @@ class Bot:
         if target == -1:
             enemies = self.state.enemies(self.teamname)
             for id, enemy in enemies.items():
-                if dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < 100 and enemy['Health'] >= 1 and (target == 1 or target['Id'] != self.state.snitch_id) and (target == -1 or enemy['Health'] < target['Health'] or (enemy['Health'] == target['Health'] and dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']))):
+                if dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < 100 and enemy['Health'] >= 1 and (target == -1 or target['Id'] != self.state.snitch_id) and (target == -1 or enemy['Health'] < target['Health'] or (enemy['Health'] == target['Health'] and dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']))):
                     target = enemy
         for id, obj in self.state.objects.items():
             if obj['Type'] == 'Snitch' and dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < 25:
@@ -125,7 +124,7 @@ class Bot:
                 flag = True
         if target == -1:
             print("spinning")
-            return [ [ ServerMessageTypes.TURNTURRETTOHEADING, { 'Amount' : ((self.getAttr('TurretHeading') + 30) % 360) } ] ]
+            return [ [ ServerMessageTypes.TURNTURRETTOHEADING, { 'Amount' : ((self.getAttr('TurretHeading') + 60) % 360) } ] ]
         if not flag and abs(getHeading(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']) - self.getAttr('TurretHeading')) < self.minTurn:
             FireMsg = self.fire()
             return [ FireMsg ]
