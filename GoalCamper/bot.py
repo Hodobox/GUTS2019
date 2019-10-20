@@ -141,6 +141,13 @@ class Bot:
     # returns True if we want to go get health
     def getHealth(self, response):
         health = self.state.health()
+        for objId in health:
+            D = dist(self.getAttr('X'),self.getAttr('Y'),health[objId]['X'],health[objId]['Y'])
+            if D < 50:
+                response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), health[objId]['X'],health[objId]['Y']) )
+                response.append(self.moveForward(D+1))
+                print(self.id, 'I NEED HEALING')
+                return True
         return False
 
     def camp(self):
@@ -206,7 +213,7 @@ class Bot:
         if self.points > 0:
             if abs(self.getAttr('Y')) > 99:
                 response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),0,0))
-                response.append(self.moveForward( abs(self.getAttr('Y')-99) + 5 ))
+                response.append(self.moveForward( abs(self.getAttr('Y')-99) + 3 ))
                 response += self.violence()
                 return response
             else:
