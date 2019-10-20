@@ -44,9 +44,9 @@ class Bot:
             neg, pos = 0, 0
             enemies = self.state.enemies(self.teamname)
             for id, enemy in enemies.items():
-                if dist(enemy['X'], enemy['Y'], 0, -100) < 30:
+                if dist(enemy['X'], enemy['Y'], 0, -100) < 40:
                     neg += 1
-                if dist(enemy['X'], enemy['Y'], 0, 100) < 30:
+                if dist(enemy['X'], enemy['Y'], 0, 100) < 40:
                     pos += 1
             gx = 0
             if neg < pos:
@@ -74,8 +74,15 @@ class Bot:
                 gx = chosen['X']
                 gy = chosen['Y']
         else:
-            gx = 15 if self.i < 2 else -15
-            gy = 85 if self.i % 2 == 0 else -85
+            neg, pos = 0, 0
+            enemies = self.state.enemies(self.teamname)
+            for id, enemy in enemies.items():
+                if dist(enemy['X'], enemy['Y'], 0, -100) < 40:
+                    neg += 1
+                if dist(enemy['X'], enemy['Y'], 0, 100) < 40:
+                    pos += 1
+            gx = 7.5 + 15 * (i-2)
+            gy = 85 if neg > pos == 0 else -85
             for id, obj in self.state.objects.items():
                 if obj['Type'] == 'Snitch':
                     print("Going after the snitch")
@@ -98,7 +105,7 @@ class Bot:
         target = -1
         allies = self.state.allies(self.teamname)
         for id, ally in allies.items():
-            if id != self.id and ally['Health'] == 1 and self.state.kills[id] == 0:
+            if id != self.id and ally['Health'] == 1 and self.state.kills[id] == 0 and self.state.snitch_id != id:
                 target = ally
                 break
         if target == -1:
