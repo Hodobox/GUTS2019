@@ -46,11 +46,15 @@ class Bot:
         
         bestDist = 1000000
         target = None
+        snitch = False
         for enemy in enemies.items():
             D = dist(self.getAttr('X'),self.getAttr('Y'), enemy[1]['X'],enemy[1]['Y'])
-            if D < bestDist:
+            if (D < bestDist and snitch == False) or (D < 100 and self.state.snitch != None and enemy[1]['Id'] == self.state.snitch):
                 bestDist = D
                 target = enemy[1]
+                if(D < 100 and self.state.snitch != None and enemy[1]['Id'] == self.state.snitch):
+                    print('REEE SNITCH')
+                    snitch = True
 
         if (bestDist < 80) or (bestDist < 100 and len(self.state.suicides) > 1 + (1 if self.id in self.state.suicides else 0) ):
             #preaim enemy
@@ -163,7 +167,6 @@ class Bot:
                 print(self.id,': I want to live')
                 self.state.suicides.remove(self.id)
 
-
         if messageType == ServerMessageTypes.KILL:
             self.points += 1
             print(self.id,' has a kill!')
@@ -178,6 +181,13 @@ class Bot:
             if self.id in self.state.suicides:
                 print(self.id,': I want to live')
                 self.state.suicides.remove(self.id)
+
+        if messageType == ServerMessageTypes.SNITCHPICKUP:
+            Id = message['Id']
+
+            if Id == self.id:
+                print('lol I has snitch')
+                self.points += 5
 
         if self.id is None:
             return []
