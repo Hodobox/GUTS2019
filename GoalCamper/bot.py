@@ -4,7 +4,7 @@ import sys
 import random
 import time
 
-RAMBO_SWITCHING = False
+
 
 class Bot:
 
@@ -152,7 +152,7 @@ class Bot:
             targetY = 103 if self.getAttr('Y') < 0 else -103
             targetX = 12 - 8*self.number
             response += self.moveToPoint(targetX, targetY)
-            if RAMBO_SWITCHING:
+            if self.state.RAMBO_SWITCHING:
                 self.switchGoal = targetY
         else:
             if abs(self.switchGoal - self.getAttr('Y')) < 5:
@@ -194,7 +194,7 @@ class Bot:
             D = dist(self.getAttr('X'),self.getAttr('Y'),health[objId]['X'],health[objId]['Y'])
             if D < 50:
                 response += self.moveToPoint(health[objId]['X'],health[objId]['Y'],1)
-                print(self.id, 'I NEED HEALING')
+                #print(self.id, 'I NEED HEALING')
                 return True
         return False
 
@@ -215,6 +215,10 @@ class Bot:
 
         if messageType == ServerMessageTypes.OBJECTUPDATE:
             self.state.update(message)
+            #print(time.time() - self.state.Last_point_scored)
+            if time.time() - self.state.Last_point_scored > 47:
+                print('RAMBO ACTIVATED')
+                self.state.RAMBO_SWITCHING = True
             #logging.info(message)
             if self.id is None and message['Name'] == self.fullname:
                 self.id = message['Id']
@@ -240,6 +244,12 @@ class Bot:
                 self.state.suicides.remove(self.id)
 
         if messageType == ServerMessageTypes.ENTEREDGOAL:
+            if self.points > 0:
+                if self.state.RAMBO_SWITCHING:
+                    print('RAMBO DEACTIVATED')
+                
+                self.state.RAMBO_SWITCHING = False
+                self.state.Last_point_scored = time.time()
             self.points = 0
 
         if messageType == ServerMessageTypes.HEALTHPICKUP:
@@ -275,7 +285,7 @@ class Bot:
 
         if self.state.snitchObj != None:
             #print(self.id,'afaik',dist(self.getAttr('X'),self.getAttr('Y'),self.state.getSnitch()['X'],self.state.getSnitch()['Y']),'from being harry')
-            if dist(self.getAttr('X'),self.getAttr('Y'),self.state.getSnitch()['X'],self.state.getSnitch()['Y']) < 25:
+            if dist(self.getAttr('X'),self.getAttr('Y'),self.state.getSnitch()['X'],self.state.getSnitch()['Y']) < 25 and self.getAttr('Ammo') > 0:
                 print(self.id,'I am harry potter!!!')
                 response = self.violence()
                 if time.time() - self.state.getSnitch()['time'] > 3:
