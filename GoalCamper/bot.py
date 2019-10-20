@@ -3,6 +3,9 @@ from mathfuncs import *
 import sys
 import random
 import time
+
+RAMBO_SWITCHING = False
+
 class Bot:
 
     def __init__(self,name,server,port,state):
@@ -149,7 +152,8 @@ class Bot:
             targetY = 103 if self.getAttr('Y') < 0 else -103
             targetX = 12 - 8*self.number
             response += self.moveToPoint(targetX, targetY)
-            self.switchGoal = targetY
+            if RAMBO_SWITCHING:
+                self.switchGoal = targetY
         else:
             if abs(self.switchGoal - self.getAttr('Y')) < 5:
                 self.switchGoal = None
