@@ -32,6 +32,18 @@ class Bot:
     def moveForward(self, dist):
         return [ServerMessageTypes.MOVEFORWARDDISTANCE,{'Amount' : dist}]
 
+    def moveToPointFixedDist(self, x,y, DIST):
+        response = []
+        response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),x,y))
+        response.append(self.moveForward(DIST))
+        return response
+
+    def moveToPoint(self,x,y,overhead=0):
+        response = []
+        response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),x,y))
+        response.append(self.moveForward(dist(self.getAttr('X'),self.getAttr('Y'),x,y)+overhead))
+        return response
+
     def sumTeamDist(self, x, y):
         res = 0
         for objId in self.state.objects:
@@ -71,8 +83,7 @@ class Bot:
             response += [TurretHeadingMsg, self.fire()]
             if snitch and self.getAttr('Ammo') > 0:
                 #also chase that MF
-                response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),target['X'],target['Y']))
-                response.append(self.moveForward(dist(self.getAttr('X'),self.getAttr('Y'),target['X'],target['Y']))+2)
+                response += self.moveToPoint(target['X'],target['Y'],2)
         else: # try assisted suicide
             bestDist = 1000000
             target = None
@@ -102,8 +113,7 @@ class Bot:
         #get to goal
         targetY = -103 if sumLeft < sumRight else 103
         targetX = 12 - 8*self.number
-        response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), targetX, targetY ) )
-        response.append(self.moveForward(abs(self.getAttr('Y')-targetY)+1))
+        response += self.moveToPoint(targetX,targetY,1)
         return response
 
     def switchGoals(self):
@@ -112,8 +122,7 @@ class Bot:
         #get to goal
         targetY = 103 if self.getAttr('Y') < 0 else -103
         targetX = 12 - 8*self.number
-        response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), targetX, targetY ) )
-        response.append(self.moveForward(dist(self.getAttr('X'), self.getAttr('Y'), targetX, targetY)))
+        response += self.moveToPoint(targetX, targetY)
         return response
 
     def getAmmo(self):
@@ -130,16 +139,14 @@ class Bot:
                 closest = pickup[1]
                 mindist = distance
         if closest == None:
-            response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), 0, 0) )
-            response.append(self.moveForward(dist(self.getAttr('X'), self.getAttr('Y'), 0, 0)))
+            response += self.moveToPoint(0,0)
             if random.choice([False,True]):
                 response.append(self.turnTurretToHeading(-100,-100))
             else:
                 response.append(self.turnTurretToHeading(100,100))
             return response
         # move to ammo
-        response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), closest['X'], closest['Y']) )
-        response.append(self.moveForward(mindist))
+        response += self.moveToPoint(closest['X'],closest['Y'])
         return response
 
     # returns True if we want to go get health
@@ -148,8 +155,7 @@ class Bot:
         for objId in health:
             D = dist(self.getAttr('X'),self.getAttr('Y'),health[objId]['X'],health[objId]['Y'])
             if D < 50:
-                response.append(self.turnToHeading(self.getAttr('X'), self.getAttr('Y'), health[objId]['X'],health[objId]['Y']) )
-                response.append(self.moveForward(D+1))
+                response += self.moveToPoint(health[objId]['X'],health[objId]['Y'],1)
                 print(self.id, 'I NEED HEALING')
                 return True
         return False
@@ -216,8 +222,7 @@ class Bot:
         
         if self.points > 0:
             if abs(self.getAttr('Y')) > 99:
-                response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),0,0))
-                response.append(self.moveForward( abs(self.getAttr('Y')-99) + 3 ))
+                response += self.moveToPointFixedDist(0,0,abs(self.getAttr('Y')-99) + 3)
                 response += self.violence()
                 return response
             else:
@@ -231,8 +236,8 @@ class Bot:
                 if time.time() - self.state.getSnitch()['time'] > 3:
                     #print(self.id,'Fix your glasses harry!!!')
                     response = [ self.turnTurretToHeading(self.state.getSnitch()['X'],self.state.getSnitch()['Y']) ]
-                response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),self.state.getSnitch()['X'],self.state.getSnitch()['Y']))
-                response.append(self.moveForward( dist(self.getAttr('X'),self.getAttr('Y'),self.state.getSnitch()['X'],self.state.getSnitch()['Y']) + 5 ))
+                
+                response += self.moveToPoint(self.state.getSnitch()['X'],self.state.getSnitch()['Y'],5)
                 return response
 
         bestDist = 1000000
@@ -240,7 +245,6 @@ class Bot:
             D = dist(self.getAttr('X'),self.getAttr('Y'), enemy[1]['X'],enemy[1]['Y'])
             if D < bestDist:
                 bestDist = D
-
 
         if bestDist < 100 or self.lastSeen == None:
             self.lastSeen = time.time()
