@@ -49,12 +49,13 @@ class Bot:
                 if enemy['X'] > self.getAttr('X'):
                     pos += 1
             gx = 0
-            if neg < pos:
+            if pos > 2:
                 gy = -105
-            elif neg > pos:
+            elif neg > 2:
                 gy = 105
             else:
                 gy = -105 if self.getAttr('Y') < 0 else 105
+            print(self.i, gy, "objective")
         elif self.getAttr('Health') <= 1 or (self.getAttr('Health') <= 2 and not self.state.snitch):
             chosen = None
             for _, obj in self.state.objects.items():
@@ -82,9 +83,9 @@ class Bot:
                 if enemy['X'] > self.getAttr('X'):
                     pos += 1
             gx = 7.5 + 15 * (self.i-2)
-            if neg < pos:
+            if pos > 2:
                 gy = -85
-            elif neg > pos:
+            elif neg > 2:
                 gy = 85
             else:
                 gy = -85 if self.getAttr('Y') < 0 else 85
@@ -93,7 +94,7 @@ class Bot:
                     gx = obj['X']
                     gy = obj['Y']
                     flag = True
-
+            print(self.i, gy, "bored")
         if abs(getHeading(self.getAttr('X'), self.getAttr('Y'), gx, gy) - self.getAttr('Heading')) < self.minTurn:
             MoveForwardMsg = self.moveForward(10)
             return [ MoveForwardMsg ]
@@ -123,7 +124,8 @@ class Bot:
                 target = obj
                 flag = True
         if target == -1:
-            return []
+            print("spinning")
+            return [ [ ServerMessageTypes.TURNTURRETTOHEADING, { 'Amount' : ((self.getAttr('TurretHeading') + 30) % 360) } ] ]
         if not flag and abs(getHeading(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']) - self.getAttr('TurretHeading')) < self.minTurn:
             FireMsg = self.fire()
             return [ FireMsg ]
