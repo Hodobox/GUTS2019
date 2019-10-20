@@ -221,7 +221,7 @@ class Bot:
             #print(time.time() - self.state.Last_point_scored)
             if self.state.Last_point_scored == None:
                 self.state.Last_point_scored = time.time()
-            elif if time.time() - self.state.Last_point_scored > 47:
+            elif time.time() - self.state.Last_point_scored > 47:
                 print('RAMBO ACTIVATED')
                 self.state.RAMBO_SWITCHING = True
             #logging.info(message)
