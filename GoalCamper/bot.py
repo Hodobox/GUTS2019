@@ -135,6 +135,9 @@ class Bot:
     def getToGoal(self):
         response = self.violence()
 
+        if self.getAttr('Health') <2 and self.getHealth(response, 25):
+            return response
+
         sumLeft = self.sumTeamDist(0,-100)
         sumRight = self.sumTeamDist(0,100)
 
@@ -188,11 +191,11 @@ class Bot:
         return response
 
     # returns True if we want to go get health
-    def getHealth(self, response):
+    def getHealth(self, response, distance = 50):
         health = self.state.health()
         for objId in health:
             D = dist(self.getAttr('X'),self.getAttr('Y'),health[objId]['X'],health[objId]['Y'])
-            if D < 50:
+            if D < distance:
                 response += self.moveToPoint(health[objId]['X'],health[objId]['Y'],1)
                 #print(self.id, 'I NEED HEALING')
                 return True
