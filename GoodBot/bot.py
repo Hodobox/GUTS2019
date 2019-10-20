@@ -81,7 +81,7 @@ class Bot:
                     neg += 1
                 if dist(enemy['X'], enemy['Y'], 0, 100) < 40:
                     pos += 1
-            gx = 7.5 + 15 * (i-2)
+            gx = 7.5 + 15 * (self.i-2)
             gy = 85 if neg > pos == 0 else -85
             for id, obj in self.state.objects.items():
                 if obj['Type'] == 'Snitch':
