@@ -69,6 +69,10 @@ class Bot:
             TurretHeadingMsg = self.turnTurretToHeading(prex, prey)
             TurretHeadingAmount = TurretHeadingMsg[1]['Amount']
             response += [TurretHeadingMsg, self.fire()]
+            if snitch and self.getAttr('Ammo') > 0:
+                #also chase that MF
+                response.append(self.turnToHeading(self.getAttr('X'),self.getAttr('Y'),target['X'],target['Y']))
+                response.append(self.moveForward(dist(self.getAttr('X'),self.getAttr('Y'),target['X'],target['Y']))+2)
         else: # try assisted suicide
             bestDist = 1000000
             target = None
