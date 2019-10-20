@@ -58,39 +58,48 @@ class Bot:
             print(self.i, gy, "objective")
         elif self.getAttr('Health') <= 1 or (self.getAttr('Health') <= 1 and not self.state.snitch):
             chosen = None
-            for _, obj in self.state.objects.items():
-                if obj['Type'] == 'HealthPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id or self.state.objects[self.state.pickups[obj['Id']]]['Health'] <= 0) and (chosen is None or dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), chosen['X'], chosen['Y'])):
-                    chosen = obj
+            self.state.lock.acquire()
+            try:
+                for _, obj in self.state.objects.items():
+                    if obj['Type'] == 'HealthPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id or self.state.objects[self.state.pickups[obj['Id']]]['Health'] <= 0) and (chosen is None or dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), chosen['X'], chosen['Y'])):
+                        chosen = obj
+            finally:
+                self.state.lock.release()
             if chosen is not None and dist(self.getAttr('X'), self.getAttr('Y'), chosen['X'], chosen['Y']) < 100:
                 self.state.pickups[chosen['Id']] = self.id
                 gx = chosen['X']
                 gy = chosen['Y']
         elif self.getAttr('Ammo') <= 0 or (self.getAttr('Ammo') <= 2 and not self.state.snitch):
             chosen = None
-            for _, obj in self.state.objects.items():
-                if obj['Type'] == 'AmmoPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id or self.state.objects[self.state.pickups[obj['Id']]]['Health'] <= 0) and (chosen is None or dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), chosen['X'], chosen['Y'])):
-                    chosen = obj
+            self.state.lock.acquire()
+            try:
+                for _, obj in self.state.objects.items():
+                    if obj['Type'] == 'AmmoPickup' and (obj['Id'] not in self.state.pickups or self.state.pickups[obj['Id']] == self.id or self.state.objects[self.state.pickups[obj['Id']]]['Health'] <= 0) and (chosen is None or dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), chosen['X'], chosen['Y'])):
+                        chosen = obj
+            finally:
+                self.state.lock.release()
             if chosen is not None and dist(self.getAttr('X'), self.getAttr('Y'), chosen['X'], chosen['Y']) < 100:    
                 self.state.pickups[chosen['Id']] = self.id
                 gx = chosen['X']
                 gy = chosen['Y']
         if gx is None:
             neg, pos = 0, 0
-            enemies = self.state.enemies(self.teamname)
+            '''enemies = self.state.enemies(self.teamname)
             for id, enemy in enemies.items():
                 if enemy['Y'] < self.getAttr('Y'):
                     neg += 1
                 if enemy['Y'] > self.getAttr('Y'):
+                    pos += 1'''
+            allies = self.state.allies(self.teamname)
+            for id, ally in allies.items():
+                if ally['Y'] < 0:
+                    neg += 1
+                else:
                     pos += 1
             gx = 5 + 10 * (self.i-2)
-            if pos > 2:
-                gy = -85
-            elif neg > 2:
-                gy = 85
-            else:
-                gy = -85 if self.getAttr('Y') < 0 else 85
+            gy = 85 if pos >= 2 else -85
             for id, obj in self.state.objects.items():
-                if obj['Type'] == 'Snitch':
+                if obj['Type'] == 'Snitch' and self.state.snitch:
                     gx = obj['X']
                     gy = obj['Y']
                     flag = True
@@ -109,19 +118,25 @@ class Bot:
         target = -1
         allies = self.state.allies(self.teamname)
         flag = False
-        for id, ally in allies.items():
-            if id != self.id and ally['Health'] == 1 and self.state.kills[id] == 0 and self.state.snitch_id != id:
-                target = ally
-                break
         if target == -1:
             enemies = self.state.enemies(self.teamname)
             for id, enemy in enemies.items():
                 if dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < 100 and enemy['Health'] >= 1 and (target == -1 or target['Id'] != self.state.snitch_id) and (target == -1 or enemy['Health'] < target['Health'] or (enemy['Health'] == target['Health'] and dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']))):
                     target = enemy
-        for id, obj in self.state.objects.items():
-            if obj['Type'] == 'Snitch' and dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < 25:
-                target = obj
-                flag = True
+        if target == -1:
+            for id, ally in allies.items():
+                if id != self.id and ally['Health'] == 1 and self.state.kills[id] == 0 and self.state.snitch_id != id:
+                    target = ally
+                    break
+                    
+        self.state.lock.acquire()
+        try:
+            for id, obj in self.state.objects.items():
+                if self.state.snitch_id and obj['Type'] == 'Snitch' and dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < 45:
+                    target = obj
+                    flag = True
+        finally:
+            self.state.lock.release()
         if target == -1:
             print("spinning")
             return [ [ ServerMessageTypes.TURNTURRETTOHEADING, { 'Amount' : ((self.getAttr('TurretHeading') + 60) % 360) } ] ]
