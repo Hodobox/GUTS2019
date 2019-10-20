@@ -9,9 +9,19 @@ class State:
         self.objects = {}
         self.last_clear = time.time()
         self.suicides = set()
+        self.snitch = None
+        self.snitchObj = None
 
     def update(self, obj):
         
+        if obj['Type'] == 'Snitch':
+            #print('yay snitch found')
+            obj['time'] = time.time()
+            self.snitchObj = obj
+            return
+        elif self.snitchObj != None and time.time() - self.snitchObj['time'] > 10:
+            self.snitchObj = None
+
         if obj['Id'] in self.objects and obj['Type'] == 'Tank':
             timediff = time.time() - self.objects[obj['Id']]['time']
             if timediff != 0:
@@ -34,7 +44,7 @@ class State:
                 if time.time() - self.objects[key]['time'] > 5:
                     outdated.append(key)
             for trash in outdated:
-                print('throwing out',self.objects[trash])
+                #print('throwing out',self.objects[trash])
                 self.objects.pop(trash)
 
     def getAttr(self, Id, Attr):
@@ -45,13 +55,23 @@ class State:
     def enemies(self, teamname):
         res = {}
         for Id in self.objects:
-            if teamname not in self.objects[Id]['Name'] and self.objects[Id]['Type'] == 'Tank':
+            if teamname not in self.objects[Id]['Name'] and self.objects[Id]['Type'] == 'Tank' and self.objects[Id]['Health'] > 0:
                 res[Id] = copy.deepcopy(self.objects[Id])
         return res
+
+    def getSnitch(self):
+        return self.snitchObj
 
     def ammo(self):
         res = {}
         for Id in self.objects:
             if self.objects[Id]['Type'] == 'AmmoPickup':
+                res[Id] = copy.deepcopy(self.objects[Id])
+        return res
+
+    def health(self):
+        res = {}
+        for Id in self.objects:
+            if self.objects[Id]['Type'] == 'HealthPickup':
                 res[Id] = copy.deepcopy(self.objects[Id])
         return res

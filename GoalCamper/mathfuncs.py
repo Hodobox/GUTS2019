@@ -23,4 +23,16 @@ def preaim(x, y, target):
 	if 'dx' in target.keys() and 'dy' in target.keys():
 		return (X + distance/25*target['dx'], Y + distance/25*target['dy'])
 	else: 
-		return (X + cos(DegToRad(target['Heading']))*distance/25*10, Y + sin(DegToRad(target['Heading']))*distance/25*10)
+		return (X + cos(DegToRad(target['Heading']))*distance/25*9, Y + sin(DegToRad(target['Heading']))*distance/25*9)
+
+def oppositeDegree(deg):
+    return (deg + 180) % 360
+
+def TurnDegreeAmount(deg1, deg2):
+    return min( abs(deg1-deg2), 360-max(deg1,deg2) + min(deg1,deg2) ) 
+
+def ForwardTurnTime(heading,x,y,X,Y):
+    return TurnDegreeAmount(heading, getHeading(x,y,X,Y) )
+
+def BackwardTurnTime(heading,x,y,X,Y):
+    return TurnDegreeAmount(heading, oppositeDegree(getHeading(x,y,X,Y)))
