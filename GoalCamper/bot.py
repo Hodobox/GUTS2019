@@ -278,7 +278,7 @@ class Bot:
 
         
         if self.points > 0:
-            if abs(self.getAttr('Y')) > 99:
+            if abs(self.getAttr('Y')) > 99.8:
                 response += self.moveToPointFixedDist(0,0,abs(self.getAttr('Y')-99) + 3)
                 response += self.violence()
                 return response
