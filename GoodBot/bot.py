@@ -2,6 +2,7 @@ from serverComms import *
 from mathfuncs import *
 import sys
 import random
+import math
 
 ENEMY = 0
 HEALTH = 1
@@ -19,17 +20,17 @@ class Bot:
         self.port = port
         self.state = state
         self.id = None
-        self.minDist = 10
-        self.minTurn = 2
+        self.minDist = 15
+        self.minTurn = 4
 
     def getAttr(self,Attr):
         return self.state.getAttr(self.id,Attr)
 
     def turnToHeading(self,x,y,X,Y):
-        return [ServerMessageTypes.TURNTOHEADING, {'Amount' : int(getHeading(x,y,X,Y))}]
+        return [ServerMessageTypes.TURNTOHEADING, {'Amount' : int(math.floor(getHeading(x,y,X,Y)) + 0.5) }]
 
     def turnTurretToHeading(self,X,Y):
-        return [ServerMessageTypes.TURNTURRETTOHEADING, {'Amount' : int(getHeading(self.getAttr('X'), self.getAttr('Y'), X, Y)) }]
+        return [ServerMessageTypes.TURNTURRETTOHEADING, {'Amount' : int(math.floor(getHeading(self.getAttr('X'), self.getAttr('Y'), X, Y)) + 0.5) }]
          
     def fire(self):
         return [ServerMessageTypes.FIRE]
@@ -100,8 +101,7 @@ class Bot:
             gy = 85 if pos >= 2 else -85
             for id, obj in self.state.objects.items():
                 if obj['Type'] == 'Snitch' and self.state.snitch:
-                    gx = obj['X']
-                    gy = obj['Y']
+                    gx, gy = self.predict(obj)
                     flag = True
         if abs(getHeading(self.getAttr('X'), self.getAttr('Y'), gx, gy) - self.getAttr('Heading')) < self.minTurn:
             MoveForwardMsg = self.moveForward(10)
@@ -114,37 +114,65 @@ class Bot:
             else:
                 return [ HeadingMsg ]
 
+    def safeShot(self, enemy, sx, sy):
+        allies = self.state.allies(self.teamname)
+        for _, ally in allies.items():
+            if min(self.getAttr('X'), sx) <= ally['X'] and ally['X'] <= max(self.getAttr('X'), sx) and ally['Id'] != self.getAttr('Id') and ally['Id'] != enemy['Id'] and abs((sy - self.getAttr('Y')) * ally['X'] - (sx - self.getAttr('X')) * ally['Y'] + sx * self.getAttr('Y') - sy * self.getAttr('X'))/sqrt((sy - self.getAttr('Y')) ** 2 + (sx - self.getAttr('X')) ** 2) < 10.0:
+                return False
+        return True
+
+    def predict(self, obj):
+        sx, sy = obj['X'], obj['Y']
+        return sx, sy
+        if obj['Id'] in self.state.oldObjs:
+            dx, dy = obj['X'] - self.state.oldObjs[obj['Id']]['X'], obj['Y'] - self.state.oldObjs[obj['Id']]['Y']
+            length = math.hypot(dx, dy)
+            if length > 0:
+                dx, dy = dx / length, dy / length
+                d = dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y'])
+                if d > 0:
+                    sx, sy = sx + 1.5 * dx * d, sy + 1.5 * dy * d
+        return sx, sy
+
     def shoot(self):
         target = -1
+        tx, ty = 0, 0
         allies = self.state.allies(self.teamname)
         flag = False
         if target == -1:
             enemies = self.state.enemies(self.teamname)
             for id, enemy in enemies.items():
-                if dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < 100 and enemy['Health'] >= 1 and (target == -1 or target['Id'] != self.state.snitch_id) and (target == -1 or enemy['Health'] < target['Health'] or (enemy['Health'] == target['Health'] and dist(self.getAttr('X'), self.getAttr('Y'), enemy['X'], enemy['Y']) < dist(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']))):
+                #sx, sy = self.predict(enemy)
+                sx, sy = enemy['X'], enemy['Y']
+                if dist(self.getAttr('X'), self.getAttr('Y'), sx, sy) < 100 and enemy['Health'] >= 1 and (target == -1 or target['Id'] != self.state.snitch_id) and (target == -1 or enemy['Health'] < target['Health'] or (enemy['Health'] == target['Health'] and dist(self.getAttr('X'), self.getAttr('Y'), sx, sy) < dist(self.getAttr('X'), self.getAttr('Y'), tx, ty))) and self.safeShot(enemy, sx, sy):
                     target = enemy
+                    tx, ty = sx, sy
         if target == -1:
             for id, ally in allies.items():
-                if id != self.id and ally['Health'] == 1 and self.state.kills[id] == 0 and self.state.snitch_id != id:
+                #sx, sy = self.predict(ally)
+                sx, sy = ally['X'], ally['Y']
+                if id != self.id and ally['Health'] == 1 and self.state.kills[id] == 0 and self.state.snitch_id != id and self.safeShot(ally, sx, sy):
                     target = ally
+                    tx, ty = sx, sy
                     break
                     
         self.state.lock.acquire()
         try:
             for id, obj in self.state.objects.items():
-                if self.state.snitch_id and obj['Type'] == 'Snitch' and dist(self.getAttr('X'), self.getAttr('Y'), obj['X'], obj['Y']) < 45:
+                sx, sy = obj['X'], obj['Y']
+                if self.state.snitch and obj['Type'] == 'Snitch' and dist(self.getAttr('X'), self.getAttr('Y'), sx, sy) < 45:
                     target = obj
+                    tx, ty = sx, sy
                     flag = True
         finally:
             self.state.lock.release()
         if target == -1:
-            print("spinning")
             return [ [ ServerMessageTypes.TURNTURRETTOHEADING, { 'Amount' : ((self.getAttr('TurretHeading') + 60) % 360) } ] ]
-        if not flag and abs(getHeading(self.getAttr('X'), self.getAttr('Y'), target['X'], target['Y']) - self.getAttr('TurretHeading')) < self.minTurn:
+        if not flag and abs(getHeading(self.getAttr('X'), self.getAttr('Y'), tx, ty) - self.getAttr('TurretHeading')) < self.minTurn:
             FireMsg = self.fire()
             return [ FireMsg ]
         else:
-            TurretHeadingMsg = self.turnTurretToHeading(target['X'], target['Y'])
+            TurretHeadingMsg = self.turnTurretToHeading(tx, ty)
             return [ TurretHeadingMsg ]
 
     def receiveMessage(self, message):

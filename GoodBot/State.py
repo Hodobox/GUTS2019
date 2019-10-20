@@ -13,9 +13,12 @@ class State:
         self.snitch_id = -1
         self.snitch = False
         self.lock = RLock()
+        self.oldObjs = {}
 
     def update(self, obj):
         obj['time'] = time.time()
+        if obj['Id'] in self.objects:
+            self.oldObjs[obj['Id']] = self.objects[obj['Id']]
         self.objects[ obj['Id'] ] = obj
         self.lock.acquire()
         try:
